@@ -31,14 +31,13 @@ f = file('log.dump', 'w')
 parametor=[[u"日付(年)","","",0,0.0,0.0,datetime.timedelta(0),0.0,0.0,0.0,""],[u"日付(年)","","",0,0.0,0.0,datetime.timedelta(0),0.0,0.0,0.0,""]]#parametor[-1] = [today_qty,today_weight,ave_weight,dt,ave_cyecle_time,ave_cyecle_cost,ave_coverweight_cost,self.TxtCtl_22.GetValue()]
 pickle.dump(parametor, f)
 f.close()
-f = file('log_1.dump', 'w')
+f = file('senbetu_log.dump', 'w')
 senbetu_parametor=[[u"日付(年)","","",0,0.0,0.0,datetime.timedelta(0),0.0,0.0,0.0,"",u"日付(年)","","",0,0.0,0.0,datetime.timedelta(0),0.0,0.0,""],[u"日付(年)","","",0,0.0,0.0,datetime.timedelta(0),0.0,0.0,0.0,"",u"日付(年)","","",0,0.0,0.0,datetime.timedelta(0),0.0,0.0,""]]#parametor[-1] = [today_qty,today_weight,ave_weight,dt,ave_cyecle_time,ave_cyecle_cost,ave_coverweight_cost,self.TxtCtl_22.GetValue()]
 pickle.dump(senbetu_parametor, f)
 f.close()
-
 f = file('set.dump', 'w')
-setting=[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,25,200,220,190,0,20,40,60,80]
-#setting[16]からsetting[24]がsetting
+setting=[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,25,200,220,190,0,20,40,60,80,0]
+#setting[16]からsetting[24]がsetting。setting[25]はロータリーエンコーダーのencoderの値
 pickle.dump(setting, f)
 f.close()
 
@@ -55,16 +54,21 @@ stock_time=parametor[-1][6]
 ave_cyecle_time=parametor[-1][7]
 ave_cyecle_cost=parametor[-1][8]
 ave_coverweight_cost=parametor[-1][9]
-senbetu_start_time=datetime.datetime.today()
-senbetu_today_qty=parametor[-1][14]
-senbetu_today_weight=parametor[-1][15]
-senbetu_ave_weight=parametor[-1][16]
-senbetu_stock_time=parametor[-1][17]
-senbetu_ave_cyecle_time=parametor[-1][18]
-senbetu_ave_cyecle_cost=parametor[-1][19]
 g.close()
+
+g = file('senbetu_log.dump', 'r')
+senbetu_parametor = pickle.load(g)
+print senbetu_parametor
+senbetu_start_time=datetime.datetime.today()
+senbetu_today_qty=senbetu_parametor[-1][3]
+senbetu_today_weight=senbetu_parametor[-1][4]
+senbetu_ave_weight=senbetu_parametor[-1][5]
+senbetu_stock_time=senbetu_parametor[-1][6]
+senbetu_ave_cyecle_time=senbetu_parametor[-1][7]
+senbetu_ave_cyecle_cost=senbetu_parametor[-1][8]
 stop_time=datetime.datetime.today()
 senbetu_stop_time=datetime.datetime.today()
+g.close()
 ##fp = FontProperties(fname=r'C:\Users\2140022\Desktop\プログラム\ipaexg.ttf', size=14)#'C:\Users\USER\Downloads\ipaexg.ttf'
 x_plot=[1]
 y_plot=[0]
@@ -76,7 +80,6 @@ x_bar=[1,2,3,4]
 
 g = file('set.dump', 'r')
 setting = pickle.load(g)
-g.close()
 #計量されたテーブルNo
 table_num = []
 #テーブルごとの計量結果
@@ -87,6 +90,9 @@ stdev=40
 total_weight=4*setting[17]
 count=0  #counter for user
 NGcount=0
+encoder = setting[25]
+g.close()
+
 #switch onで、190g以下の時の処理
 discharge_list_a=[]
 discharge_list_b=[]
@@ -182,36 +188,43 @@ def discharge_d():
 ###------回転------
 
 ##GPIO.setmode(GPIO.BCM)
-##GPIO.setup(17, GPIO.IN)　##for laser
+##GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP)　##for ロータリーエンコーダー
 ##GPIO.setup(18, GPIO.OUT,initial=0)　##for FET
+##initPos=1200#原点になるように値を調整
 ##
-##
-##5cm以内だとLOWに出力する二値出力距離センサーを使う。LOW→HIGHでストップ。
+##ロータリーエンコーダーを使う。Aの信号だけ拾って位置を判断する。
 ###スタート
 ##p = GPIO.PWM(18, 50)
 ### 初期化
 ##p.start(0)
 def rotate_moter():#1/16回転する
 	pass
+##	global encoder
 ##	pwm.set_pwm(0, 0, servo_up)
 ##	pwm.set_pwm(1, 0, servo_up)
 ##	pwm.set_pwm(2, 0, servo_up)
 ##	pwm.set_pwm(3, 0, servo_up)
 ##	p.ChangeDutyCycle( 0 )
-##	for i in range(0,10):
-##		new_duty = 60*i/10　#60は適当に設定。モーターなどに一番無理なさそうな速度に設定。
-##		p.ChangeDutyCycle( new_duty )#(in1,in2)を(0,0)→(0,1)にする(あるいは(0,1))ことでフリー→回転
-##		time.sleep(0.1)
 ##	p.ChangeDutyCycle( 60 )
-##	time.sleep(0.5)#この間にリミットスイッチが1(on)にならないと、そこで止まってしまうのでだめ。
-##	GPIO.wait_for_edge(17, GPIO.RISING)
-##	for i in range(10, -1, -1):
-##		new_duty = 60*i/10
-##		p.ChangeDutyCycle( new_duty )#(in1,in2)を(0,1)→(0,0)にすることで、回転→フリーにする
+##	time.sleep(0.1)
+##	if encoder==initPos:
+##		p.ChangeDutyCycle( 0 )
 ##		time.sleep(0.1)
-##	p.ChangeDutyCycle( 0 )
-##	break
+##		f = file('set.dump', 'w')
+##		setting[25]=encoder
+##		pickle.dump(setting, f)
+##		f.close()
 
+def moterEncode():
+	global encoder
+	while True:
+		GPIO.wait_for_edge(17, GPIO.BOTH)
+		encoder+=1
+		if encoder==1800:#ギア比75*一周のパルス信号24
+			encoder=0
+	
+	
+	
 
 #------組合せ------
 
@@ -1468,18 +1481,18 @@ class MyApp(wx.App):
 			self.senbetu_TxtCtl_12.SetValue('%.1f' % senbetu_ave_cyecle_time)
 			self.senbetu_TxtCtl_14.SetValue('%.1f' % senbetu_ave_cyecle_cost)
 
-			g = file('log.dump', 'r')
+			g = file('senbetu_log.dump', 'r')
 			# ファイルオブジェクトに対してload()を使う
-			parametor = pickle.load(g)
+			senbetu_parametor = pickle.load(g)
 			#save　というか置き換え
-			parametor[-1] = [self.combobox_1.GetValue(),self.combobox_2.GetValue(),self.combobox_3.GetValue(),today_qty,today_weight,ave_weight,stock_time,ave_cyecle_time,ave_cyecle_cost,ave_coverweight_cost,self.TxtCtl_22.GetValue(),self.senbetu_combobox_1.GetValue(),self.senbetu_combobox_2.GetValue(),self.senbetu_combobox_3.GetValue(),senbetu_today_qty,senbetu_today_weight,senbetu_ave_weight,senbetu_dt,senbetu_ave_cyecle_time,senbetu_ave_cyecle_cost,self.senbetu_TxtCtl_22.GetValue()]#TxtCtl_22は備考の記入欄
+			senbetu_parametor[-1] = [self.senbetu_combobox_1.GetValue(),self.senbetu_combobox_2.GetValue(),self.senbetu_combobox_3.GetValue(),senbetu_today_qty,senbetu_today_weight,senbetu_ave_weight,senbetu_dt,senbetu_ave_cyecle_time,senbetu_ave_cyecle_cost,self.senbetu_TxtCtl_22.GetValue()]#TxtCtl_22は備考の記入欄
 			# 書き込みモードでpickle化したものを格納するファイル(.dump)を用意
 			#print 'parametor=', parametor
 			g.close()
 			
-			f = file('log.dump', 'w')
+			f = file('senbetu_log.dump', 'w')
 			# pickle化する(dump()を使う)
-			pickle.dump(parametor, f)
+			pickle.dump(senbetu_parametor, f)
 			f.close() # ちゃんと閉じましょう
 
 			f = file('set.dump', 'w')
@@ -1499,7 +1512,7 @@ class MyApp(wx.App):
 		self.senbetu_Btn2.Enable()
 		#"""スレッドをスタートさせる"""
 		self.stop_event.clear()
-		senbetu_stock_time+=senbetu_stop_time-senbetu_start_time
+		senbetu_stock_time+=(senbetu_stop_time-senbetu_start_time)
 		self.SenbetuGo()
 
 		
@@ -1548,30 +1561,30 @@ class MyApp(wx.App):
 			newSheet_2.write(0, 9, u"備考")
 			#parametor=[[/0/u"日付(年)",/1/"",/2/"",/3/0,/4/0.0,/5/0.0,/6/datetime.timedelta(0),/7/0.0,/8/0.0,/9/0.0,/10/"",/11/u"日付(年)",/12/"",/13/"",/14/0,/15/0.0,/16/0.0,/17/datetime.timedelta(0),/18/0.0,/19/0.0,/20/""]
 
-			g = file('log.dump', 'r')
-			parametor = pickle.load(g)
+			g = file('senbetu_log.dump', 'r')
+			senbetu_parametor = pickle.load(g)
 
 			for i in range(len(parametor)):
-				newSheet_2.write(i+1, 0, parametor[i][11])
-				newSheet_2.write(i+1, 1, parametor[i][12])
-				newSheet_2.write(i+1, 2, parametor[i][13])
-				newSheet_2.write(i+1, 3, parametor[i][14])
-				newSheet_2.write(i+1, 4, '%.1f' % parametor[i][15])
-				newSheet_2.write(i+1, 5, '%.1f' % parametor[i][16])
-				newSheet_2.write(i+1, 6, str(str(parametor[i][17]).split('.')[0]))
-				newSheet_2.write(i+1, 7, '%.1f' % parametor[i][18])
-				newSheet_2.write(i+1, 8, '%.1f' % parametor[i][19])
-				newSheet_2.write(i+1, 9, parametor[i][20])
+				newSheet_2.write(i+1, 0, senbetu_parametor[i][0])
+				newSheet_2.write(i+1, 1, senbetu_parametor[i][1])
+				newSheet_2.write(i+1, 2, senbetu_parametor[i][2])
+				newSheet_2.write(i+1, 3, senbetu_parametor[i][3])
+				newSheet_2.write(i+1, 4, '%.1f' % senbetu_parametor[i][4])
+				newSheet_2.write(i+1, 5, '%.1f' % senbetu_parametor[i][5])
+				newSheet_2.write(i+1, 6, str(str(senbetu_parametor[i][6]).split('.')[0]))
+				newSheet_2.write(i+1, 7, '%.1f' % senbetu_parametor[i][7])
+				newSheet_2.write(i+1, 8, '%.1f' % senbetu_parametor[i][8])
+				newSheet_2.write(i+1, 9, senbetu_parametor[i][9])
 			
-			parametor.append([])
+			senbetu_parametor.append([u"日付(年)","","",0,0.0,0.0,datetime.timedelta(0),0.0,0.0,0.0,"",u"日付(年)","","",0,0.0,0.0,datetime.timedelta(0),0.0,0.0,""])
 			g.close()
 			book.save('log.xls')		
-			f = file('log.dump', 'w')
-			pickle.dump(parametor, f)
+			f = file('senbetu_log.dump', 'w')
+			pickle.dump(senbetu_parametor, f)
 			f.close()
 
 			senbetu_start_time=datetime.datetime.today()
-			senbetu_stock_time=datetime.timedelta(0)
+			senbetu_stock_time=datetime.datetime.today()-senbetu_stop_time#####-1day とかになってしまうのを防ぐため、-senbetu_stop_timeを入れている。
 			senbetu_today_qty=0
 			senbetu_today_weight=0
 			senbetu_ave_weight=0
@@ -1586,6 +1599,8 @@ class MyApp(wx.App):
 
 
 def main():
+	thread1=threading.Thread(target=moterEncode)
+	thread1.start()
 	app = MyApp()
 	app.MainLoop()
 
