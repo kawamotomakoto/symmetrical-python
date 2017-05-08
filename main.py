@@ -1204,7 +1204,10 @@ class MyApp(wx.App):
 		self.panel_senbetu.SetSizer(self.senbetu_layout_1_3)
 		self.Frm.Show()		
 		self.stop_event.set()
-		self.SenbetuGo()
+		self.Btn1.Enable()
+		self.Btn2.Disable()
+		self.senbetu_Btn1.Enable()
+		self.senbetu_Btn2.Disable()
 		return True
 #####################################################################################################	
 
@@ -1327,7 +1330,8 @@ class MyApp(wx.App):
 				#print 'a'
 				#print combi_num_a
 				i=0
-			time.sleep(float(setting[0]/10))
+			time.sleep(float(setting[16]/10))
+			#処理内容が多すぎる？のを改善するため
 
 
 	def JuryoStop(self, event):
@@ -1439,7 +1443,6 @@ class MyApp(wx.App):
 		global ave_cyecle_time
 		global ave_cyecle_cost
 		global ave_coverweight_cost
-		print 'start'
 		senbetu_start_time=datetime.datetime.today()
 		plt.close('all')
 		fig = plt.figure(figsize=(4.5, 4.1))
@@ -1448,7 +1451,6 @@ class MyApp(wx.App):
 		lines3, = ax3.plot(x_plot, y_plot,color="k", marker="o",markersize=20,)
 		ax3.axis([0, 5, 0, 200])
 		ax3.set_title(u'重量(g)')
-		
 		while not self.stop_event.is_set():
 			senbetu_table_code+=1
 			if senbetu_table_code==16:
@@ -1461,7 +1463,7 @@ class MyApp(wx.App):
 			senbetu_rotate()
 			
 			lines3.set_data(x_plot, y_plot)
-			plt.pause(.01)
+			plt.pause(.1)
 			
 			#dtは作業時間
 			senbetu_dt = datetime.datetime.today()-senbetu_start_time+senbetu_stock_time
@@ -1499,7 +1501,8 @@ class MyApp(wx.App):
 			pickle.dump(setting, f)
 			f.close()
 
-			time.sleep(float(setting[0]/10))
+			time.sleep(float(setting[20]/10))
+			#処理内容が多すぎる？のを改善するため
 
 	def SenbetuStart(self, event):
 		global senbetu_stock_time
@@ -1514,7 +1517,6 @@ class MyApp(wx.App):
 		self.stop_event.clear()
 		senbetu_stock_time+=(senbetu_stop_time-senbetu_start_time)
 		self.SenbetuGo()
-
 		
 	def SenbetuStop(self, event):
 		global senbetu_stock_time
