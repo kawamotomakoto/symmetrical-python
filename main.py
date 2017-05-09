@@ -1264,13 +1264,7 @@ class MyApp(wx.App):
 		ax2.axis([0, 5, 100, 300])
 		ax2.set_title(u'組合せ重量')
 		
-		while True:
-			#ストッパーで止める
-			if senbetu_stop_trigger==True:
-				while True:
-					time.sleep(0.5)
-					if senbetu_stop_trigger==False:
-						break
+		while stop_trigger==False:
 			table_code+=1
 			if table_code==16:
 				table_code=0#0に戻す
@@ -1443,6 +1437,7 @@ class MyApp(wx.App):
 		global ave_cyecle_time
 		global ave_cyecle_cost
 		global ave_coverweight_cost
+		global senbetu_stop_trigger
 		senbetu_start_time=datetime.datetime.today()
 		plt.close('all')
 		fig = plt.figure(figsize=(4.5, 4.1))
@@ -1451,7 +1446,7 @@ class MyApp(wx.App):
 		lines3, = ax3.plot(x_plot, y_plot,color="k", marker="o",markersize=20,)
 		ax3.axis([0, 5, 0, 200])
 		ax3.set_title(u'重量(g)')
-		while not stop_event.is_set():
+		while senbetu_stop_trigger==False:
 			senbetu_table_code+=1
 			if senbetu_table_code==16:
 				senbetu_table_code=0#0に戻す
@@ -1508,13 +1503,14 @@ class MyApp(wx.App):
 		global senbetu_stock_time
 		global senbetu_stop_time
 		global senbetu_start_time
+		global senbetu_stop_trigger
 		#juryoを出来なくする
 		self.Btn1.Disable()
 		self.Btn2.Disable()
 		self.senbetu_Btn1.Disable()
 		self.senbetu_Btn2.Enable()
-		#"""スレッドをスタートさせる"""
-		stop_event.clear()
+		#ストッパーの解除
+		senbetu_stop_trigger=False
 		senbetu_stock_time+=(senbetu_stop_time-senbetu_start_time)
 		self.SenbetuGo()
 		
@@ -1522,6 +1518,7 @@ class MyApp(wx.App):
 		global senbetu_stock_time
 		global senbetu_stop_time
 		global senbetu_start_time
+		global senbetu_stop_trigger
 		#juryoを出来るようにする
 		self.Btn1.Enable()
 		self.Btn2.Disable()
@@ -1530,8 +1527,8 @@ class MyApp(wx.App):
 		print 'senbetu_stop'
 		#タイマーを止める
 		senbetu_stop_time=datetime.datetime.today()
-		#"""スレッドを停止させる"""
-		stop_event.set()
+		#ストッパーON
+		senbetu_stop_trigger=True
 
 	#Juryo&add
 	def SenbetuReset(self, event):
