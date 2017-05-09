@@ -708,6 +708,7 @@ def rotate():
 ##		break
 
 
+stop_event = threading.Event() #クラスの中ではなく外で宣言させる。
 
 #------main------
 
@@ -742,7 +743,6 @@ class MyApp(wx.App):
 			pickle.dump(setting, f)
 			f.close()
 
-		self.stop_event = threading.Event() #停止させるかのフラグ
 			
 		#フレーム
 		width, height = 720, 400
@@ -1203,7 +1203,7 @@ class MyApp(wx.App):
 		self.senbetu_layout_1_3.Add(self.senbetu_layout_3, 1, flag=wx.EXPAND | wx.ALL,   border=10)
 		self.panel_senbetu.SetSizer(self.senbetu_layout_1_3)
 		self.Frm.Show()		
-		self.stop_event.set()
+		stop_event.set()
 		self.Btn1.Enable()
 		self.Btn2.Disable()
 		self.senbetu_Btn1.Enable()
@@ -1451,7 +1451,7 @@ class MyApp(wx.App):
 		lines3, = ax3.plot(x_plot, y_plot,color="k", marker="o",markersize=20,)
 		ax3.axis([0, 5, 0, 200])
 		ax3.set_title(u'重量(g)')
-		while not self.stop_event.is_set():
+		while not stop_event.is_set():
 			senbetu_table_code+=1
 			if senbetu_table_code==16:
 				senbetu_table_code=0#0に戻す
@@ -1514,7 +1514,7 @@ class MyApp(wx.App):
 		self.senbetu_Btn1.Disable()
 		self.senbetu_Btn2.Enable()
 		#"""スレッドをスタートさせる"""
-		self.stop_event.clear()
+		stop_event.clear()
 		senbetu_stock_time+=(senbetu_stop_time-senbetu_start_time)
 		self.SenbetuGo()
 		
@@ -1531,7 +1531,7 @@ class MyApp(wx.App):
 		#タイマーを止める
 		senbetu_stop_time=datetime.datetime.today()
 		#"""スレッドを停止させる"""
-		self.stop_event.set()
+		stop_event.set()
 
 	#Juryo&add
 	def SenbetuReset(self, event):
