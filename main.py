@@ -118,8 +118,8 @@ senbetu_discharge_list_b=[]
 senbetu_discharge_list_c=[]
 senbetu_discharge_list_d=[]
 table_code=0#各テーブルの番号
-stop_trigger=False
-senbetu_stop_trigger=False
+trigger=False
+senbetu_trigger=False
 senbetu_table_code=0
 
 ##GPIO.setmode(GPIO.BCM)
@@ -214,15 +214,6 @@ def rotate_moter():#1/16回転する
 ##		setting[25]=encoder
 ##		pickle.dump(setting, f)
 ##		f.close()
-
-def moterEncode():
-	global encoder
-	while True:
-		GPIO.wait_for_edge(17, GPIO.BOTH)
-		encoder+=1
-		if encoder==1800:#ギア比75*一周のパルス信号24
-			encoder=0
-	
 	
 	
 
@@ -552,7 +543,8 @@ def senbetu_rotate():
 	global senbetu_discharge_list_a
 	global senbetu_discharge_list_b
 	global senbetu_discharge_list_c
-	global senbetu_discharge_list_d	
+	global senbetu_discharge_list_d
+	global y_plot	
 	
 	#print "回転"
 ##	weight=random.gauss(102.5,25)#トライ用のコード。テーブルにワークが乗っかったと仮定。
@@ -707,10 +699,7 @@ def rotate():
 ##		GPIO.wait_for_edge(4, GPIO.RISING) #comment out for try
 ##		break
 
-
-stop_event = threading.Event() #クラスの中ではなく外で宣言させる。
-
-#------main------
+#------window------
 
 class MyApp(wx.App):
 	def OnInit(self):
@@ -746,7 +735,7 @@ class MyApp(wx.App):
 			
 		#フレーム
 		width, height = 720, 400
-		self.Frm = wx.Frame(None, -1,  u"計算式秤 v1",pos=(5,5), size=wx.Size(width, height))
+		self.Frm = wx.Frame(None, -1,  u"計算式秤 v1",pos=(500,5), size=wx.Size(width, height))
 
 		#タブ
 ##		self.notebook = fnb.FlatNotebook(self.Frm, wx.ID_ANY, agwStyle=fnb.FNB_X_ON_TAB |
@@ -800,6 +789,9 @@ class MyApp(wx.App):
 		self.Btn2 = wx.Button(self.panel_juryo, -1, u"停止", size=(150,30))
 		self.Btn1.Bind(wx.EVT_BUTTON, self.JuryoStart)
 		self.Btn2.Bind(wx.EVT_BUTTON, self.JuryoStop)
+		self.Bind(wx.EVT_TIMER, self.JuryoShow)
+		self.Btn1.Enable()
+		self.Btn2.Disable()
 		#記録欄のテキスト
 		element_array_1 = ("",u"17年", u"18年", u"19年", u"20年", u"21年", u"22年", u"23年", u"24年", u"25年", u"26年")
 		self.combobox_1 = wx.ComboBox(self.panel_juryo, wx.ID_ANY, u"年", choices=element_array_1, style=wx.CB_DROPDOWN)
@@ -1032,6 +1024,9 @@ class MyApp(wx.App):
 		self.senbetu_Btn2 = wx.Button(self.panel_senbetu, -1, u"停止", size=(150,30))
 		self.senbetu_Btn1.Bind(wx.EVT_BUTTON, self.SenbetuStart)
 		self.senbetu_Btn2.Bind(wx.EVT_BUTTON, self.SenbetuStop)
+		self.Bind(wx.EVT_TIMER, self.SenbetuShow)
+		self.senbetu_Btn1.Enable()
+		self.senbetu_Btn2.Disable()
 		#記録欄のテキスト
 		senbetu_element_array_1  = ("",u"17年", u"18年", u"19年", u"20年", u"21年", u"22年", u"23年", u"24年", u"25年", u"26年")
 		self.senbetu_combobox_1 = wx.ComboBox(self.panel_senbetu, wx.ID_ANY, u"年", choices=element_array_1, style=wx.CB_DROPDOWN)
@@ -1202,28 +1197,45 @@ class MyApp(wx.App):
 		self.senbetu_layout_1_3.Add(self.senbetu_layout_1, 0, flag=wx.EXPAND | wx.ALL,   border=10)
 		self.senbetu_layout_1_3.Add(self.senbetu_layout_3, 1, flag=wx.EXPAND | wx.ALL,   border=10)
 		self.panel_senbetu.SetSizer(self.senbetu_layout_1_3)
-		self.Frm.Show()		
-		stop_event.set()
-		self.Btn1.Enable()
-		self.Btn2.Disable()
-		self.senbetu_Btn1.Enable()
-		self.senbetu_Btn2.Disable()
+		self.Frm.Show()
 		return True
 #####################################################################################################	
 
 	def JuryoStart(self, event):
-		#メイン
-		global table_num
-		global table_weight
-		global total_weight
-		global weight_ave
-		global i
-		global count
-		global final_sumweight_a
-		global final_sumweight_b
-		global final_sumweight_c
-		global final_sumweight_d
+		global stock_time
+		global stop_time
 		global start_time
+		global trigger
+		start_time=datetime.datetime.today()
+		#juryoを出来なくする
+		self.Btn1.Disable()
+		self.Btn2.Enable()
+		self.senbetu_Btn1.Disable()
+		self.senbetu_Btn2.Disable()
+		self.t1 = wx.Timer(self)
+		self.t1.Start(1000) # 数字の単位は msec
+		#triggerをonにする
+		trigger=True
+			
+	def JuryoStop(self, event):
+		global stock_time
+		global stop_time
+		global start_time
+		global trigger
+		#juryoを出来るようにする
+		self.Btn1.Enable()
+		self.Btn2.Disable()
+		self.senbetu_Btn1.Enable()
+		self.senbetu_Btn2.Disable()
+		self.t1.Stop()
+		del self.t1   # ちゃんとdelする。
+		#タイマーを止める
+		stop_time=datetime.datetime.today()
+		stock_time+=stop_time-start_time
+		#ストッパーON
+		trigger=False
+		
+	def JuryoShow(self, event):
 		global start_time
 		global stock_time
 		global today_qty
@@ -1235,113 +1247,43 @@ class MyApp(wx.App):
 		global ave_cyecle_cost
 		global ave_coverweight_cost
 		global setting
-		global table_code
-		global stop_trigger
-		print 'start'
-		#senbetuを出来なくする
-		self.Btn1.Disable()
-		self.Btn2.Enable()
-		self.senbetu_Btn1.Disable()
-		self.senbetu_Btn2.Disable()
-		#ストッパーの解除
-		stop_trigger=False
-		start_time=datetime.datetime.today()
-		final_sumweight=[final_sumweight_a,final_sumweight_b,final_sumweight_c,final_sumweight_d]
-		plt.close('all')
-		fig = plt.figure(figsize=(4.5, 4.1))
-		G = gridspec.GridSpec(1, 20)
-		ax1 = fig.add_subplot(G[0,1:6])
-		ax2 = fig.add_subplot(G[0,9:])
+		#dtは作業時間
+		dt = datetime.datetime.today()-start_time+stock_time        
+		dt1 = str(dt)
+		if today_qty>0:
+			ave_weight=today_weight*1000/today_qty
+		working_sec=dt.seconds
+		if today_qty>0:
+			ave_cyecle_time=working_sec/today_qty
+		ave_cyecle_cost=float(self.TxtCtl_30.GetValue())*float(self.TxtCtl_32.GetValue())/3600*ave_cyecle_time #人件費と作業者数を参照
+		if ave_weight>0:
+			ave_coverweight_cost=(ave_weight-setting[17])*float(self.TxtCtl_28.GetValue())/1000 #kgあたりの野菜の単価を参照
+		#today_qtyなどがtxtctlの欄に表示される(型を少し変更して)
+		self.TxtCtl_6.SetValue('%d' % today_qty)
+		self.TxtCtl_8.SetValue('%.1f' % today_weight)
+		self.TxtCtl_10.SetValue('%.1f' % ave_weight)
+		self.TxtCtl_12.SetValue(str(dt1.split('.')[0]))
+		self.TxtCtl_14.SetValue('%.1f' % ave_cyecle_time)
+		self.TxtCtl_16.SetValue('%.1f' % ave_cyecle_cost)
+		self.TxtCtl_18.SetValue('%.1f' % ave_coverweight_cost)
 
-		lines, = ax1.plot(x_plot, setting[17]/2 ,color="r", marker="o",markersize=20,)
-		lines1, = ax1.plot(x_plot, y_plot,color="k", marker="o",markersize=20,)
-		lines2, = ax2.plot(x_bar, final_sumweight,color="b", marker="o",markersize=20, linewidth = 0)
-
-		ax1.axis([0.9, 1.1, 0, 200])
-		ax1.set_xticklabels([])
-		ax1.set_title(u'個別重量')
-		ax1.set_ylabel(u'重量(g)')
-		ax2.axis([0, 5, 100, 300])
-		ax2.set_title(u'組合せ重量')
+		g = file('log.dump', 'r')
+		# ファイルオブジェクトに対してload()を使う
+		parametor = pickle.load(g)
+		#save　というか置き換え
+		parametor[-1] = [self.combobox_1.GetValue(),self.combobox_2.GetValue(),self.combobox_3.GetValue(),today_qty,today_weight,ave_weight,dt,ave_cyecle_time,ave_cyecle_cost,ave_coverweight_cost,self.TxtCtl_22.GetValue(),self.senbetu_combobox_1.GetValue(),self.senbetu_combobox_2.GetValue(),self.senbetu_combobox_3.GetValue(),senbetu_today_qty,senbetu_today_weight,senbetu_ave_weight,senbetu_stock_time,senbetu_ave_cyecle_time,senbetu_ave_cyecle_cost,self.senbetu_TxtCtl_22.GetValue()]#TxtCtl_22は備考の記入欄
+		# 書き込みモードでpickle化したものを格納するファイル(.dump)を用意
+		#print 'parametor=', parametor
+		g.close()
 		
-		while stop_trigger==False:
-			table_code+=1
-			if table_code==16:
-				table_code=0#0に戻す
-			rotate_moter()
-			measure(table_code)
-			rotate()
+		f = file('log.dump', 'w')
+		# pickle化する(dump()を使う)
+		pickle.dump(parametor, f)
+		f.close() # ちゃんと閉じましょう
 
-			
-			lines1.set_data(x_plot, y_plot)
-			final_sumweight=[final_sumweight_a,final_sumweight_b,final_sumweight_c,final_sumweight_d]
-			lines2.set_data(x_bar, final_sumweight)
-			plt.pause(.01)
-			i+=1
-			#dtは作業時間
-			dt = datetime.datetime.today()-start_time+stock_time        
-			dt1 = str(dt)
-			if today_qty>0:
-				ave_weight=today_weight*1000/today_qty
-			working_sec=dt.seconds
-			if today_qty>0:
-				ave_cyecle_time=working_sec/today_qty
-			ave_cyecle_cost=float(self.TxtCtl_30.GetValue())*float(self.TxtCtl_32.GetValue())/3600*ave_cyecle_time #人件費と作業者数を参照
-			if ave_weight>0:
-				ave_coverweight_cost=(ave_weight-setting[17])*float(self.TxtCtl_28.GetValue())/1000 #kgあたりの野菜の単価を参照
-			#today_qtyなどがtxtctlの欄に表示される(型を少し変更して)
-			self.TxtCtl_6.SetValue('%d' % today_qty)
-			self.TxtCtl_8.SetValue('%.1f' % today_weight)
-			self.TxtCtl_10.SetValue('%.1f' % ave_weight)
-			self.TxtCtl_12.SetValue(str(dt1.split('.')[0]))
-			self.TxtCtl_14.SetValue('%.1f' % ave_cyecle_time)
-			self.TxtCtl_16.SetValue('%.1f' % ave_cyecle_cost)
-			self.TxtCtl_18.SetValue('%.1f' % ave_coverweight_cost)
-
-			g = file('log.dump', 'r')
-			# ファイルオブジェクトに対してload()を使う
-			parametor = pickle.load(g)
-			#save　というか置き換え
-			parametor[-1] = [self.combobox_1.GetValue(),self.combobox_2.GetValue(),self.combobox_3.GetValue(),today_qty,today_weight,ave_weight,dt,ave_cyecle_time,ave_cyecle_cost,ave_coverweight_cost,self.TxtCtl_22.GetValue(),self.senbetu_combobox_1.GetValue(),self.senbetu_combobox_2.GetValue(),self.senbetu_combobox_3.GetValue(),senbetu_today_qty,senbetu_today_weight,senbetu_ave_weight,senbetu_stock_time,senbetu_ave_cyecle_time,senbetu_ave_cyecle_cost,self.senbetu_TxtCtl_22.GetValue()]#TxtCtl_22は備考の記入欄
-			# 書き込みモードでpickle化したものを格納するファイル(.dump)を用意
-			#print 'parametor=', parametor
-			g.close()
-			
-			f = file('log.dump', 'w')
-			# pickle化する(dump()を使う)
-			pickle.dump(parametor, f)
-			f.close() # ちゃんと閉じましょう
-
-			f = file('set.dump', 'w')
-			pickle.dump(setting, f)
-			f.close()
-			
-			if sum(table_weight)>=(total_weight-weight_ave/2+10) or i>=9:
-				choice()
-				count+=1
-				table_num = []
-				table_weight=[]
-				#print 'a'
-				#print combi_num_a
-				i=0
-			time.sleep(float(setting[16]/10))
-			#処理内容が多すぎる？のを改善するため
-
-
-	def JuryoStop(self, event):
-		global stop_trigger
-		global stock_time
-		#senbetuを出来るようにする
-		self.Btn1.Enable()
-		self.Btn2.Disable()
-		self.senbetu_Btn1.Enable()
-		self.senbetu_Btn2.Disable()
-		print 'juryo_stop'
-		#ストッパーをonにする
-		stop_trigger=True
-		#タイマーを止める
-		stop_time=datetime.datetime.today()
-		stock_time+=stop_time-start_time
+		f = file('set.dump', 'w')
+		pickle.dump(setting, f)
+		f.close()
 		
 	#Juryo&add
 	def JuryoReset(self, event):
@@ -1416,119 +1358,90 @@ class MyApp(wx.App):
 
 ###############################################################
 
-	def SenbetuGo(self):
-		#メイン
-		global weight
-		global senbetu_today_qty
+	def SenbetuStart(self, event):
+		global senbetu_stock_time
+		global senbetu_stop_time
+		global senbetu_start_time
+		global senbetu_trigger
+		#sumweightの表示を0にする	
+		final_sumweight=[0,0,0,0]
+		senbetu_start_time=datetime.datetime.today()
+		#juryoを出来なくする
+		self.Btn1.Disable()
+		self.Btn2.Disable()
+		self.senbetu_Btn1.Disable()
+		self.senbetu_Btn2.Enable()
+		self.senbetu_t1 = wx.Timer(self)
+		self.senbetu_t1.Start(1000) # 数字の単位は msec
+		#triggerをonにする
+		senbetu_trigger=True
+		
+	def SenbetuStop(self, event):
+		global senbetu_stock_time
+		global senbetu_stop_time
+		global senbetu_start_time
+		global senbetu_trigger
+		#juryoを出来るようにする
+		self.Btn1.Enable()
+		self.Btn2.Disable()
+		self.senbetu_Btn1.Enable()
+		self.senbetu_Btn2.Disable()
+		self.senbetu_t1.Stop()
+		del self.senbetu_t1   # ちゃんとdelする。
+		#タイマーを止める
+		senbetu_stop_time=datetime.datetime.today()
+		senbetu_stock_time+=senbetu_stop_time-senbetu_start_time
+		#ストッパーON
+		senbetu_trigger=False
+		
+	def SenbetuShow(self, event):
 		global senbetu_start_time
 		global senbetu_stock_time
+		global senbetu_today_qty
 		global senbetu_today_weight
 		global senbetu_dt
 		global senbetu_ave_weight
 		global senbetu_working_sec
 		global senbetu_ave_cyecle_time
 		global senbetu_ave_cyecle_cost
+		global senbetu_ave_coverweight_cost
 		global setting
-		global senbetu_table_code
-		global senbetu_stop_trigger
-		global today_qty,today_weight
-		global ave_weight
-		global dt
-		global ave_cyecle_time
-		global ave_cyecle_cost
-		global ave_coverweight_cost
-		global senbetu_stop_trigger
-		senbetu_start_time=datetime.datetime.today()
-		plt.close('all')
-		fig = plt.figure(figsize=(4.5, 4.1))
-		G = gridspec.GridSpec(1, 20)
-		ax3 = fig.add_subplot(G[0,1:])
-		lines3, = ax3.plot(x_plot, y_plot,color="k", marker="o",markersize=20,)
-		ax3.axis([0, 5, 0, 200])
-		ax3.set_title(u'重量(g)')
-		while senbetu_stop_trigger==False:
-			senbetu_table_code+=1
-			if senbetu_table_code==16:
-				senbetu_table_code=0#0に戻す
-			rotate_moter()
-			measure(senbetu_table_code)
-			print weight
-			senbetu_today_weight+=weight/1000
-			senbetu_today_qty+=1
-			senbetu_rotate()
-			
-			lines3.set_data(x_plot, y_plot)
-			plt.pause(.1)
-			
-			#dtは作業時間
-			senbetu_dt = datetime.datetime.today()-senbetu_start_time+senbetu_stock_time
-			senbetu_dt1 = str(senbetu_dt)
-			working_sec=senbetu_dt.seconds
-			if senbetu_today_qty>0:
-				senbetu_ave_weight=senbetu_today_weight*1000/senbetu_today_qty
-			senbetu_working_sec=senbetu_dt.seconds
-			if senbetu_today_qty>0:
-				senbetu_ave_cyecle_time=senbetu_working_sec/senbetu_today_qty
-			senbetu_ave_cyecle_cost=float(self.senbetu_TxtCtl_28.GetValue())*float(self.senbetu_TxtCtl_30.GetValue())/3600*senbetu_ave_cyecle_time #人件費と作業者数を参照
-			#today_qtyなどがtxtctlの欄に表示される(型を少し変更して)
-			self.senbetu_TxtCtl_4.SetValue('%d' % senbetu_today_qty)
-			self.senbetu_TxtCtl_6.SetValue('%.1f' % senbetu_today_weight)
-			self.senbetu_TxtCtl_8.SetValue('%.1f' % senbetu_ave_weight)
-			self.senbetu_TxtCtl_10.SetValue(str(senbetu_dt1.split('.')[0]))
-			self.senbetu_TxtCtl_12.SetValue('%.1f' % senbetu_ave_cyecle_time)
-			self.senbetu_TxtCtl_14.SetValue('%.1f' % senbetu_ave_cyecle_cost)
+		#window
+		#dtは作業時間
+		senbetu_dt = datetime.datetime.today()-senbetu_start_time+senbetu_stock_time
+		senbetu_dt1 = str(senbetu_dt)
+		senbetu_working_sec=senbetu_dt.seconds
+		if senbetu_today_qty>0:
+			senbetu_ave_weight=senbetu_today_weight*1000/senbetu_today_qty
+		senbetu_working_sec=senbetu_dt.seconds
+		if senbetu_today_qty>0:
+			senbetu_ave_cyecle_time=senbetu_working_sec/senbetu_today_qty
+		senbetu_ave_cyecle_cost=float(self.senbetu_TxtCtl_28.GetValue())*float(self.senbetu_TxtCtl_30.GetValue())/3600*senbetu_ave_cyecle_time #人件費と作業者数を参照
+		#today_qtyなどがtxtctlの欄に表示される(型を少し変更して)
+		self.senbetu_TxtCtl_4.SetValue('%d' % senbetu_today_qty)
+		self.senbetu_TxtCtl_6.SetValue('%.1f' % senbetu_today_weight)
+		self.senbetu_TxtCtl_8.SetValue('%.1f' % senbetu_ave_weight)
+		self.senbetu_TxtCtl_10.SetValue(str(senbetu_dt1.split('.')[0]))
+		self.senbetu_TxtCtl_12.SetValue('%.1f' % senbetu_ave_cyecle_time)
+		self.senbetu_TxtCtl_14.SetValue('%.1f' % senbetu_ave_cyecle_cost)
 
-			g = file('senbetu_log.dump', 'r')
-			# ファイルオブジェクトに対してload()を使う
-			senbetu_parametor = pickle.load(g)
-			#save　というか置き換え
-			senbetu_parametor[-1] = [self.senbetu_combobox_1.GetValue(),self.senbetu_combobox_2.GetValue(),self.senbetu_combobox_3.GetValue(),senbetu_today_qty,senbetu_today_weight,senbetu_ave_weight,senbetu_dt,senbetu_ave_cyecle_time,senbetu_ave_cyecle_cost,self.senbetu_TxtCtl_22.GetValue()]#TxtCtl_22は備考の記入欄
-			# 書き込みモードでpickle化したものを格納するファイル(.dump)を用意
-			#print 'parametor=', parametor
-			g.close()
-			
-			f = file('senbetu_log.dump', 'w')
-			# pickle化する(dump()を使う)
-			pickle.dump(senbetu_parametor, f)
-			f.close() # ちゃんと閉じましょう
-
-			f = file('set.dump', 'w')
-			pickle.dump(setting, f)
-			f.close()
-
-			time.sleep(float(setting[20]/10))
-			#処理内容が多すぎる？のを改善するため
-
-	def SenbetuStart(self, event):
-		global senbetu_stock_time
-		global senbetu_stop_time
-		global senbetu_start_time
-		global senbetu_stop_trigger
-		#juryoを出来なくする
-		self.Btn1.Disable()
-		self.Btn2.Disable()
-		self.senbetu_Btn1.Disable()
-		self.senbetu_Btn2.Enable()
-		#ストッパーの解除
-		senbetu_stop_trigger=False
-		senbetu_stock_time+=(senbetu_stop_time-senbetu_start_time)
-		self.SenbetuGo()
+		g = file('senbetu_log.dump', 'r')
+		# ファイルオブジェクトに対してload()を使う
+		senbetu_parametor = pickle.load(g)
+		#save　というか置き換え
+		senbetu_parametor[-1] = [self.senbetu_combobox_1.GetValue(),self.senbetu_combobox_2.GetValue(),self.senbetu_combobox_3.GetValue(),senbetu_today_qty,senbetu_today_weight,senbetu_ave_weight,senbetu_dt,senbetu_ave_cyecle_time,senbetu_ave_cyecle_cost,self.senbetu_TxtCtl_22.GetValue()]#TxtCtl_22は備考の記入欄
+		# 書き込みモードでpickle化したものを格納するファイル(.dump)を用意
+		#print 'parametor=', parametor
+		g.close()
 		
-	def SenbetuStop(self, event):
-		global senbetu_stock_time
-		global senbetu_stop_time
-		global senbetu_start_time
-		global senbetu_stop_trigger
-		#juryoを出来るようにする
-		self.Btn1.Enable()
-		self.Btn2.Disable()
-		self.senbetu_Btn1.Enable()
-		self.senbetu_Btn2.Disable()
-		print 'senbetu_stop'
-		#タイマーを止める
-		senbetu_stop_time=datetime.datetime.today()
-		#ストッパーON
-		senbetu_stop_trigger=True
+		f = file('senbetu_log.dump', 'w')
+		# pickle化する(dump()を使う)
+		pickle.dump(senbetu_parametor, f)
+		f.close() # ちゃんと閉じましょう
+
+		f = file('set.dump', 'w')
+		pickle.dump(setting, f)
+		f.close()
 
 	#Juryo&add
 	def SenbetuReset(self, event):
@@ -1596,10 +1509,89 @@ class MyApp(wx.App):
 
 		dial.Destroy()
 
+def plot():
+	global final_sumweight_b
+	global final_sumweight_a
+	global final_sumweight_b
+	global final_sumweight_c
+	global final_sumweight_d
+	final_sumweight=[final_sumweight_a,final_sumweight_b,final_sumweight_c,final_sumweight_d]
+	fig = plt.figure(figsize=(4.5, 4.1))
+
+	G = gridspec.GridSpec(1, 20)
+	ax1 = fig.add_subplot(G[0,1:6])
+	ax2 = fig.add_subplot(G[0,9:])
+
+	lines, = ax1.plot(x_plot, 200 ,color="r", marker="o",markersize=20,)
+	lines1, = ax1.plot(x_plot, y_plot,color="k", marker="o",markersize=20,)
+	lines2, = ax2.plot(x_bar, final_sumweight,color="b", marker="o",markersize=20, linewidth = 0)
+
+	ax1.axis([0.9, 1.1, 0, 200])
+	ax1.set_xticklabels([])
+	ax1.set_title(u'個別重量')
+	ax1.set_ylabel(u'重量(g)')
+	ax2.axis([0, 5, 100, 300])
+	ax2.set_title(u'組合せ重量')
+
+	while True:
+		lines1.set_data(x_plot, y_plot)
+		final_sumweight=[final_sumweight_a,final_sumweight_b,final_sumweight_c,final_sumweight_d]
+		lines2.set_data(x_bar, final_sumweight)
+		plt.pause(0.1)
+
+def run():
+	global setting
+	global table_code
+	global trigger
+	global i
+	global count
+	global table_num
+	global table_weight
+	while trigger==True:
+		table_code+=1
+		if table_code==16:
+			table_code=0#0に戻す
+		i+=1
+		rotate_moter()
+		measure(table_code)
+		rotate()
+		print (weight)
+		if i>=9:
+			choice()
+			count+=1
+			table_num = []
+			table_weight=[]
+			#print 'a'
+			#print combi_num_a
+			i=0
+		time.sleep(float(setting[16]/10))
+	
+def senbetu_run():
+	global weight
+	global senbetu_table_code
+	global senbetu_trigger
+	global today_qty,today_weight
+	global setting
+	while senbetu_trigger==True:
+		senbetu_table_code+=1
+		if senbetu_table_code==16:
+			senbetu_table_code=0#0に戻す
+		rotate_moter()
+		measure(senbetu_table_code)
+		senbetu_today_weight+=weight/1000
+		senbetu_today_qty+=1
+		senbetu_rotate()
+		print (weight)
+		time.sleep(float(setting[20]/10))
+	
 
 def main():
-	thread1=threading.Thread(target=moterEncode)
+	thread1=threading.Thread(target=plot)
 	thread1.start()
+	thread2=threading.Thread(target=run)
+	thread2.start()
+	thread3=threading.Thread(target=senbetu_run)
+	thread3.start()	
 	app = MyApp()
 	app.MainLoop()
 
