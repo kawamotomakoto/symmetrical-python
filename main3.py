@@ -21,20 +21,20 @@ import matplotlib.gridspec as gridspec
 from matplotlib.font_manager import FontProperties
 import warnings
 warnings.filterwarnings('ignore')
-import wx.lib.agw.flatnotebook as fnb
+#import wx.lib.agw.flatnotebook as fnb
 from multiprocessing import Process, Value, Array, Queue
 from threading import (Event, Thread)
 import datetime
 import sys
-from hx711 import HX711
+#from hx711 import HX711
 import numpy as np
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy import linalg as LA
-import smbus
+#from scipy import linalg as LA
+#import smbus
 
 #最初にやることでエラー回避
-GPIO.cleanup()
+#GPIO.cleanup()
 
 # 初期化(普段はコメントアウト)
 f = file('log.dump', 'w')
@@ -50,7 +50,7 @@ pickle.dump(senbetu_parametor, f)
 f.close()
 f = file('set.dump', 'w')
 setting = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,0.0, 0.0, 0.0, 0.0, 0.0,
-           25, 200, 220, 190, 500, 800, 1, 15, 0, 20, 40, 60, 80, 800, 1]
+           10, 200, 220, 190, 500, 800, 1, 5, 0, 20, 40, 60, 80, 800, 1]
 # setting[16]からsetting[30]がsetting
 pickle.dump(setting, f)
 f.close()
@@ -238,27 +238,43 @@ def rotate_moter():
 ##    p.ChangeDutyCycle(0)
 
 #------組合せ------
-
+sum_table_weight = []
+allcombi_num = []
+allcombi_weight = []
+allcombi_weight_dif = []  # allcombi_weight_dif=[204.78022541534693, 88.19455714403786, 84.85081941624652, 31.734848855062552, 113.21724615959693, 3.3684221117121638, 6.712159839503499, 123.29782811081253, 84.85042555351703, 31.73524271779206, 35.0789804455834, 151.6646487168925, 6.712553702232981, 123.29822197354207, 126.6419597013334, 243.22762797264244, 123.55823768144668, 6.972569410137623, 3.628831682346288, 112.9568365889628, 31.995258425696676, 84.59040984561244, 87.93414757340378, 204.5198158447128, 3.628437819616778, 112.95723045169228, 116.30096817948362, 232.88663645079276, 87.9345414361332, 204.52020970744235, 207.86394743523368, 324.4496157065427, 119.66939029119577, 3.083722019886693, 0.26001570790464257, 116.84568397921373, 28.106411035445774, 88.47925723586332, 91.82299496365465, 208.40866323496368, 0.26040957063412407, 116.84607784194321, 120.18981556973455, 236.77548384104364, 91.82338882638413, 208.40905709769322, 211.75279482548456, 328.33846309679365, 38.447402557295504, 78.13826571401353, 81.48200344180486, 198.06767171311395, 53.115576698454504, 169.7012449697636, 173.04498269755493, 289.63065096886396, 81.4823973045344, 198.06806557584343, 201.41180330363477, 317.997471574944, 173.04537656028435, 289.6310448315935, 292.97478255938483, 409.5604508306939]
+allcombi_weight_dif_order = []
+# allcombi_order=[[4, 5], [2, 3], [3, 4], [0, 1], [2, 5], [0, 4], [1, 5], [1, 4]]
+allcombi_order = []
+leftover_order_allcombi = []
+table_num_2 = []
+n = 0  # n=4
+combi_num = []
+combi_weight_a = []
+combi_weight_b = []
+combi_weight_c = []
+combi_weight_d = []
+error_count = 0
+counter = 0 # for analysis
+choice_done = False
 
 def choice():  # 4 dischargers
-    # リセット
-    sum_table_weight = []
-    allcombi_num = []
-    allcombi_weight = []
-    allcombi_weight_dif = []  # allcombi_weight_dif=[204.78022541534693, 88.19455714403786, 84.85081941624652, 31.734848855062552, 113.21724615959693, 3.3684221117121638, 6.712159839503499, 123.29782811081253, 84.85042555351703, 31.73524271779206, 35.0789804455834, 151.6646487168925, 6.712553702232981, 123.29822197354207, 126.6419597013334, 243.22762797264244, 123.55823768144668, 6.972569410137623, 3.628831682346288, 112.9568365889628, 31.995258425696676, 84.59040984561244, 87.93414757340378, 204.5198158447128, 3.628437819616778, 112.95723045169228, 116.30096817948362, 232.88663645079276, 87.9345414361332, 204.52020970744235, 207.86394743523368, 324.4496157065427, 119.66939029119577, 3.083722019886693, 0.26001570790464257, 116.84568397921373, 28.106411035445774, 88.47925723586332, 91.82299496365465, 208.40866323496368, 0.26040957063412407, 116.84607784194321, 120.18981556973455, 236.77548384104364, 91.82338882638413, 208.40905709769322, 211.75279482548456, 328.33846309679365, 38.447402557295504, 78.13826571401353, 81.48200344180486, 198.06767171311395, 53.115576698454504, 169.7012449697636, 173.04498269755493, 289.63065096886396, 81.4823973045344, 198.06806557584343, 201.41180330363477, 317.997471574944, 173.04537656028435, 289.6310448315935, 292.97478255938483, 409.5604508306939]
-    allcombi_weight_dif_order = []
+    # リセットsum_table_weight = []
+    global allcombi_num
+    global allcombi_weight
+    global allcombi_weight_dif  # allcombi_weight_dif=[204.78022541534693, 88.19455714403786, 84.85081941624652, 31.734848855062552, 113.21724615959693, 3.3684221117121638, 6.712159839503499, 123.29782811081253, 84.85042555351703, 31.73524271779206, 35.0789804455834, 151.6646487168925, 6.712553702232981, 123.29822197354207, 126.6419597013334, 243.22762797264244, 123.55823768144668, 6.972569410137623, 3.628831682346288, 112.9568365889628, 31.995258425696676, 84.59040984561244, 87.93414757340378, 204.5198158447128, 3.628437819616778, 112.95723045169228, 116.30096817948362, 232.88663645079276, 87.9345414361332, 204.52020970744235, 207.86394743523368, 324.4496157065427, 119.66939029119577, 3.083722019886693, 0.26001570790464257, 116.84568397921373, 28.106411035445774, 88.47925723586332, 91.82299496365465, 208.40866323496368, 0.26040957063412407, 116.84607784194321, 120.18981556973455, 236.77548384104364, 91.82338882638413, 208.40905709769322, 211.75279482548456, 328.33846309679365, 38.447402557295504, 78.13826571401353, 81.48200344180486, 198.06767171311395, 53.115576698454504, 169.7012449697636, 173.04498269755493, 289.63065096886396, 81.4823973045344, 198.06806557584343, 201.41180330363477, 317.997471574944, 173.04537656028435, 289.6310448315935, 292.97478255938483, 409.5604508306939]
+    global allcombi_weight_dif_order
     # allcombi_order=[[4, 5], [2, 3], [3, 4], [0, 1], [2, 5], [0, 4], [1, 5], [1, 4]]
-    allcombi_order = []
-    leftover_order_allcombi = []
-    table_num_2 = []
-    n = 0  # n=4
-    combi_num = []
-    combi_weight_a = []
-    combi_weight_b = []
-    combi_weight_c = []
-    combi_weight_d = []
+    global allcombi_order
+    global leftover_order_allcombi
+    global table_num_2
+    global n  # n=4
+    global combi_num
+    global combi_weight_a
+    global combi_weight_b
+    global combi_weight_c
+    global combi_weight_d
+    global error_count
     global NGcount
-    error_count = 0
     global table_num
     global table_weight
     global spare_num_a
@@ -274,7 +290,23 @@ def choice():  # 4 dischargers
     global today_weight
     global today_qty
     global setting
-
+    global choice_done
+    sum_table_weight = []
+    allcombi_num = []
+    allcombi_weight = []
+    allcombi_weight_dif = []  # allcombi_weight_dif=[204.78022541534693, 88.19455714403786, 84.85081941624652, 31.734848855062552, 113.21724615959693, 3.3684221117121638, 6.712159839503499, 123.29782811081253, 84.85042555351703, 31.73524271779206, 35.0789804455834, 151.6646487168925, 6.712553702232981, 123.29822197354207, 126.6419597013334, 243.22762797264244, 123.55823768144668, 6.972569410137623, 3.628831682346288, 112.9568365889628, 31.995258425696676, 84.59040984561244, 87.93414757340378, 204.5198158447128, 3.628437819616778, 112.95723045169228, 116.30096817948362, 232.88663645079276, 87.9345414361332, 204.52020970744235, 207.86394743523368, 324.4496157065427, 119.66939029119577, 3.083722019886693, 0.26001570790464257, 116.84568397921373, 28.106411035445774, 88.47925723586332, 91.82299496365465, 208.40866323496368, 0.26040957063412407, 116.84607784194321, 120.18981556973455, 236.77548384104364, 91.82338882638413, 208.40905709769322, 211.75279482548456, 328.33846309679365, 38.447402557295504, 78.13826571401353, 81.48200344180486, 198.06767171311395, 53.115576698454504, 169.7012449697636, 173.04498269755493, 289.63065096886396, 81.4823973045344, 198.06806557584343, 201.41180330363477, 317.997471574944, 173.04537656028435, 289.6310448315935, 292.97478255938483, 409.5604508306939]
+    allcombi_weight_dif_order = []
+    # allcombi_order=[[4, 5], [2, 3], [3, 4], [0, 1], [2, 5], [0, 4], [1, 5], [1, 4]]
+    allcombi_order = []
+    leftover_order_allcombi = []
+    table_num_2 = []
+    n = 0  # n=4
+    combi_num = []
+    combi_weight_a = []
+    combi_weight_b = []
+    combi_weight_c = []
+    combi_weight_d = []
+    error_count = 0
     spare_i = i
 
     # print "組合せ計算中"
@@ -291,97 +323,135 @@ def choice():  # 4 dischargers
 
     allcombi_weight_dif_allorder = sorted(
         range(len(allcombi_weight_dif)), key=allcombi_weight_dif.__getitem__)
-    for j in allcombi_weight_dif_allorder:
-        allcombi_order.append(allcombi_num[j])
+    for k in allcombi_weight_dif_allorder:
+        allcombi_order.append(allcombi_num[k])
         
     def flatten(nested_list):
         """2重のリストをフラットにする関数"""
         return [e for inner_list in nested_list for e in inner_list]
 
     table_num_1 = table_num[:]
-
-    #'4th start'
-    lst = list(combinations(allcombi_order[:15], 4))
-    # print lst
-    for j in lst:
-        f = flatten(j)
-        # print f
-        if [key for key, val in Counter(f).items() if val > 1] == [] :#かぶりなし、抜けなし
-            # print '4th start'
-            combi_num = list(j)
-
-            while True:
-                if table_num[0] in combi_num[0] or table_num[-1] in combi_num[3]:
-                    random.shuffle(combi_num)
-                else:
-                    break
-            
-            print combi_num
-
-            for j in combi_num[0]:
-                combi_weight_a.append(table_weight[j])
-            for j in combi_num[1]:
-                combi_weight_b.append(table_weight[j])
-            for j in combi_num[2]:
-                combi_weight_c.append(table_weight[j])
-            for j in combi_num[3]:
-                combi_weight_d.append(table_weight[j])
-
-            if sum(combi_weight_a) < setting[19] or sum(combi_weight_a) > setting[18]:
-                error_count += 1
-            if sum(combi_weight_b) < setting[19] or sum(combi_weight_b) > setting[18]:
-                error_count += 1
-            if sum(combi_weight_c) < setting[19] or sum(combi_weight_c) > setting[18]:
-                error_count += 1
-            if sum(combi_weight_d) < setting[19] or sum(combi_weight_d) > setting[18]:
-                error_count += 1
-
-            if error_count == 0:
-                spare_num_a = combi_num[0]
-                spare_num_b = map(lambda n: n + 1, combi_num[1])
-                spare_num_c = map(lambda n: n + 2, combi_num[2])
-                spare_num_d = map(lambda n: n + 3, combi_num[3])
-                spare_sumweight_a = sum(combi_weight_a)
-                spare_sumweight_b = sum(combi_weight_b)
-                spare_sumweight_c = sum(combi_weight_c)
-                spare_sumweight_d = sum(combi_weight_d)
-                print 'combi'
-                print(combi_num)
-                print"a"
-                print(spare_sumweight_a)
-                print(spare_sumweight_b)
-                print(spare_sumweight_c)
-                print(spare_sumweight_d)
-                print"d"
-                g = file('log.dump', 'r')
-                parametor = pickle.load(g)
-                parametor[-1][3] += 4
-                parametor[-1][4] += (spare_sumweight_a + spare_sumweight_b +
-                                 spare_sumweight_c + spare_sumweight_d) / 1000
-                g.close()
-                
-                f = file('log.dump', 'w')
-                pickle.dump(parametor, f)
-                f.close()
-
-            elif error_count > 1:
-                combi_num = []
-                combi_weight_a = []
-                combi_weight_b = []
-                combi_weight_c = []
-                combi_weight_d = []
-                error_count = 0
-                
-                print '3rd start'
-                # lst=[((0, 1, 2), (0, 1, 3), (0, 1, 4), (0, 2, 3)), ((0, 1, 2), (0, 1, 3), (0, 1, 4), (0, 2, 4)), ((0, 1, 2), (0, 1, 3), (0, 2, 3), (0, 2, 4)), ((0, 1, 2), (0, 1, 4), (0, 2, 3), (0, 2, 4)), ((0, 1, 3), (0, 1, 4), (0, 2, 3), (0, 2, 4))]
-                lst = list(combinations(allcombi_order[:15], 3))
-                # print lst
-                for j in lst:
-                    f = flatten(j)
-                    # print f
-                    if [key for key, val in Counter(f).items() if val > 1] == []:
+    
+    choice_done = False
+    
+    def choice4():
+        global combi_num
+        global combi_weight_a
+        global combi_weight_b
+        global combi_weight_c
+        global combi_weight_d
+        global error_count
+        global spare_num_a
+        global spare_num_b
+        global spare_num_c
+        global spare_num_d
+        global spare_sumweight_a
+        global spare_sumweight_b
+        global spare_sumweight_c
+        global spare_sumweight_d
+        global counter
+        global choice_done
+        #'4th start'
+        lst = list(combinations(allcombi_order[:25], 4))
+        # print lst
+        for j in lst:
+            f = flatten(j)
+            # print f
+            if [key for key, val in Counter(f).items() if val > 1] == [] :#かぶりなし、抜けなし
+                # print '4th start'
+                combi_num = list(j)
+    
+                while True:
+                    if table_num[0] in combi_num[0] or table_num[-1] in combi_num[3]:
+                        random.shuffle(combi_num)
+                    else:
                         break
-        
+                
+                #print combi_num
+    
+                for j in combi_num[0]:
+                    combi_weight_a.append(table_weight[j])
+                for j in combi_num[1]:
+                    combi_weight_b.append(table_weight[j])
+                for j in combi_num[2]:
+                    combi_weight_c.append(table_weight[j])
+                for j in combi_num[3]:
+                    combi_weight_d.append(table_weight[j])
+    
+                if sum(combi_weight_a) < setting[19] or sum(combi_weight_a) > setting[18]:
+                    error_count += 1
+                if sum(combi_weight_b) < setting[19] or sum(combi_weight_b) > setting[18]:
+                    error_count += 1
+                if sum(combi_weight_c) < setting[19] or sum(combi_weight_c) > setting[18]:
+                    error_count += 1
+                if sum(combi_weight_d) < setting[19] or sum(combi_weight_d) > setting[18]:
+                    error_count += 1
+    
+                if error_count == 0:
+                    spare_num_a = combi_num[0]
+                    spare_num_b = [x + 1 for x in combi_num[1]]
+                    spare_num_c = [x + 2 for x in combi_num[2]]
+                    spare_num_d = [x + 3 for x in combi_num[3]]
+                    spare_sumweight_a = sum(combi_weight_a)
+                    spare_sumweight_b = sum(combi_weight_b)
+                    spare_sumweight_c = sum(combi_weight_c)
+                    spare_sumweight_d = sum(combi_weight_d)
+#                    print 'combi'
+#                    print(combi_num)
+#                    print"a"
+#                    print(spare_sumweight_a)
+#                    print(spare_sumweight_b)
+#                    print(spare_sumweight_c)
+#                    print(spare_sumweight_d)
+#                    print"d"
+                    g = file('log.dump', 'r')
+                    parametor = pickle.load(g)
+                    parametor[-1][3] += 4
+                    parametor[-1][4] += (spare_sumweight_a + spare_sumweight_b +
+                                     spare_sumweight_c + spare_sumweight_d) / 1000
+                    g.close()
+                    
+                    f = file('log.dump', 'w')
+                    pickle.dump(parametor, f)
+                    f.close()
+                    choice_done = True
+                    
+#                    counter += 4
+                    
+                    break
+    
+                elif error_count > 1:
+                    combi_weight_a = []
+                    combi_weight_b = []
+                    combi_weight_c = []
+                    combi_weight_d = []
+                    error_count = 0
+    
+    def choice3():
+        global combi_num
+        global combi_weight_a
+        global combi_weight_b
+        global combi_weight_c
+        global combi_weight_d
+        global error_count
+        global spare_num_a
+        global spare_num_b
+        global spare_num_c
+        global spare_num_d
+        global spare_sumweight_a
+        global spare_sumweight_b
+        global spare_sumweight_c
+        global spare_sumweight_d
+        global counter
+        global choice_done
+        #print '3rd start'
+        # lst=[((0, 1, 2), (0, 1, 3), (0, 1, 4), (0, 2, 3)), ((0, 1, 2), (0, 1, 3), (0, 1, 4), (0, 2, 4)), ((0, 1, 2), (0, 1, 3), (0, 2, 3), (0, 2, 4)), ((0, 1, 2), (0, 1, 4), (0, 2, 3), (0, 2, 4)), ((0, 1, 3), (0, 1, 4), (0, 2, 3), (0, 2, 4))]
+        lst = list(combinations(allcombi_order[:25], 3))
+        # print lst
+        for j in lst:
+            f = flatten(j)
+            # print f
+            if [key for key, val in Counter(f).items() if val > 1] == []:
                 combi_num = list(j)
         
                 while True:
@@ -390,7 +460,7 @@ def choice():  # 4 dischargers
                     else:
                         break
                             
-                print combi_num
+        #                print combi_num
         
                 for j in combi_num[0]:
                     combi_weight_a.append(table_weight[j])
@@ -408,23 +478,23 @@ def choice():  # 4 dischargers
         
                 if error_count == 0:
                     spare_num_a = combi_num[0]
-                    spare_num_b = map(lambda n: n + 1, combi_num[1])
-                    spare_num_c = map(lambda n: n + 2, combi_num[2])
+                    spare_num_b = [x + 1 for x in combi_num[1]]
+                    spare_num_c = [x + 2 for x in combi_num[2]]
                     spare_num_d = []
                     spare_sumweight_a = sum(combi_weight_a)
                     spare_sumweight_b = sum(combi_weight_b)
                     spare_sumweight_c = sum(combi_weight_c)
                     spare_sumweight_d = 0
         
-                    print 'combi'
-                    print(combi_num)
-                    # print 'spare_num_d'
-                    #print (spare_num_d)
-                    print "a"
-                    print(spare_sumweight_a)
-                    print(spare_sumweight_b)
-                    print(spare_sumweight_c)
-                    print "c"
+#                    print 'combi'
+#                    print(combi_num)
+#                    # print 'spare_num_d'
+#                    #print (spare_num_d)
+#                    print "a"
+#                    print(spare_sumweight_a)
+#                    print(spare_sumweight_b)
+#                    print(spare_sumweight_c)
+#                    print "c"
         
                     g = file('log.dump', 'r')
                     parametor = pickle.load(g)
@@ -436,93 +506,158 @@ def choice():  # 4 dischargers
                     f = file('log.dump', 'w')
                     pickle.dump(parametor, f)
                     f.close()
-
+                    choice_done = True
+                    
+#                    counter += 3
+                    
+                    break
+        
                 elif error_count > 1:
                     combi_num = []
                     combi_weight_a = []
                     combi_weight_b = []
                     combi_weight_c = []
                     error_count = 0
-                    # print '2nd start'
-                    # lst=[((0, 1, 2), (0, 1, 3), (0, 1, 4), (0, 2, 3)), ((0, 1, 2), (0, 1, 3), (0, 1, 4), (0, 2, 4)), ((0, 1, 2), (0, 1, 3), (0, 2, 3), (0, 2, 4)), ((0, 1, 2), (0, 1, 4), (0, 2, 3), (0, 2, 4)), ((0, 1, 3), (0, 1, 4), (0, 2, 3), (0, 2, 4))]
-                    lst = list(combinations(allcombi_order[:15], 2))
-                    # print lst
-                    for j in lst:
-                        f = flatten(j)
-                        # print f
-                        if [key for key, val in Counter(f).items() if val > 1] == []:
-                            break
-                    combi_num = list(j)
-                    print combi_num
+
+    def choice2():
+        global combi_num
+        global combi_weight_a
+        global combi_weight_b
+        global combi_weight_c
+        global combi_weight_d
+        global error_count
+        global spare_num_a
+        global spare_num_b
+        global spare_num_c
+        global spare_num_d
+        global spare_sumweight_a
+        global spare_sumweight_b
+        global spare_sumweight_c
+        global spare_sumweight_d
+        global counter
+        global choice_done
+        # print '2nd start'
+        # lst=[((0, 1, 2), (0, 1, 3), (0, 1, 4), (0, 2, 3)), ((0, 1, 2), (0, 1, 3), (0, 1, 4), (0, 2, 4)), ((0, 1, 2), (0, 1, 3), (0, 2, 3), (0, 2, 4)), ((0, 1, 2), (0, 1, 4), (0, 2, 3), (0, 2, 4)), ((0, 1, 3), (0, 1, 4), (0, 2, 3), (0, 2, 4))]
+        lst = list(combinations(allcombi_order[:25], 2))
+        # print lst
+        for j in lst:
+            f = flatten(j)
+            # print f
+            if [key for key, val in Counter(f).items() if val > 1] == []:
+                combi_num = list(j)
+        #                    print combi_num
         
-                    for j in combi_num[0]:
-                        combi_weight_a.append(table_weight[j])
-                    for j in combi_num[1]:
-                        combi_weight_b.append(table_weight[j])
+                for j in combi_num[0]:
+                    combi_weight_a.append(table_weight[j])
+                for j in combi_num[1]:
+                    combi_weight_b.append(table_weight[j])
         
-                    if sum(combi_weight_a) < setting[19] or sum(combi_weight_a) > setting[18]:
-                        error_count += 1
-                    if sum(combi_weight_b) < setting[19] or sum(combi_weight_b) > setting[18]:
-                        error_count += 1
-                    if error_count == 0:
-                        spare_num_a = combi_num[0]
-                        spare_num_b = map(lambda n: n + 1, combi_num[1])
-                        spare_num_c = []
-                        spare_num_d = []
-                        spare_sumweight_a = sum(combi_weight_a)
-                        spare_sumweight_b = sum(combi_weight_b)
-                        spare_sumweight_c = 0
-                        spare_sumweight_d = 0
-                        print 'combi'
-                        print(combi_num)
-                        print(spare_sumweight_a)
-                        print(spare_sumweight_b)
-                        g = file('log.dump', 'r')
-                        parametor = pickle.load(g)
-                        parametor[-1][3] += 2
-                        parametor[-1][4] += (spare_sumweight_a + spare_sumweight_b) / 1000
-                        g.close()
-                        
-                        f = file('log.dump', 'w')
-                        pickle.dump(parametor, f)
-                        f.close()
+                if sum(combi_weight_a) < setting[19] or sum(combi_weight_a) > setting[18]:
+                    error_count += 1
+                if sum(combi_weight_b) < setting[19] or sum(combi_weight_b) > setting[18]:
+                    error_count += 1
+                if error_count == 0:
+                    spare_num_a = combi_num[0]
+                    spare_num_b = [x + 1 for x in combi_num[1]]
+                    spare_num_c = []
+                    spare_num_d = []
+                    spare_sumweight_a = sum(combi_weight_a)
+                    spare_sumweight_b = sum(combi_weight_b)
+                    spare_sumweight_c = 0
+                    spare_sumweight_d = 0
+#                    print 'combi'
+#                    print(combi_num)
+#                    print "a"
+#                    print(spare_sumweight_a)
+#                    print(spare_sumweight_b)
+#                    print "b"
+                    g = file('log.dump', 'r')
+                    parametor = pickle.load(g)
+                    parametor[-1][3] += 2
+                    parametor[-1][4] += (spare_sumweight_a + spare_sumweight_b) / 1000
+                    g.close()
                     
-                    elif error_count > 1:
-                        combi_num = []
-                        combi_weight_a = []
-                        combi_weight_b = []
-                        combi_weight_c = []
-                        error_count = 0
-                        # print '1st start'
-                        combi_num = allcombi_order[0]
-                        print combi_num
+                    f = file('log.dump', 'w')
+                    pickle.dump(parametor, f)
+                    f.close()
+                    choice_done = True
+                    
+#                    counter += 2
+                    
+                    break
+                
+                elif error_count > 1:
+                    combi_num = []
+                    combi_weight_a = []
+                    combi_weight_b = []
+                    error_count = 0
+                        
+     
+    def choice1():
+        global combi_num
+        global combi_weight_a
+        global combi_weight_b
+        global combi_weight_c
+        global combi_weight_d
+        global error_count
+        global spare_num_a
+        global spare_num_b
+        global spare_num_c
+        global spare_num_d
+        global spare_sumweight_a
+        global spare_sumweight_b
+        global spare_sumweight_c
+        global spare_sumweight_d
+        global counter
+        global choice_done
+        # print '1st start'
+        combi_num = allcombi_order[0]
+#                        print combi_num
+
+        for j in combi_num:
+            combi_weight_a.append(table_weight[j])
+
+        if sum(combi_weight_a) < setting[19] or sum(combi_weight_a) > setting[18]:
+            error_count += 1
+        if error_count == 0:
+            spare_num_a = combi_num[0]
+            spare_num_b = []
+            spare_num_c = []
+            spare_num_d = []
+            spare_sumweight_a = sum(combi_weight_a)
+            spare_sumweight_b = 0
+            spare_sumweight_c = 0
+            spare_sumweight_d = 0
+#            print 'combi'
+#            print(combi_num)
+#            print "a"
+#            print(spare_sumweight_a)
+#            print "a"
+            g = file('log.dump', 'r')
+            parametor = pickle.load(g)
+            parametor[-1][3] += 1
+            parametor[-1][4] += spare_sumweight_a  / 1000
+            g.close()
             
-                        for j in combi_num:
-                            combi_weight_a.append(table_weight[j])
+            f = file('log.dump', 'w')
+            pickle.dump(parametor, f)
+            f.close()
             
-                        if sum(combi_weight_a) < setting[19] or sum(combi_weight_a) > setting[18]:
-                            error_count += 1
-                        if error_count == 0:
-                            spare_num_a = combi_num[0]
-                            spare_num_b = []
-                            spare_num_c = []
-                            spare_num_d = []
-                            spare_sumweight_a = sum(combi_weight_a)
-                            spare_sumweight_b = 0
-                            spare_sumweight_c = 0
-                            spare_sumweight_d = 0
-                            print 'combi'
-                            print(combi_num)
-                            print(spare_sumweight_a)
-                            g = file('log.dump', 'r')
-                            parametor = pickle.load(g)
-                            parametor[-1][3] += 1
-                            parametor[-1][4] += spare_sumweight_a  / 1000
-                            g.close()
-                            
-                            f = file('log.dump', 'w')
-                            pickle.dump(parametor, f)
-                            f.close()
+#            counter += 1
+                    
+     
+    choice4()
+    if choice_done is False:
+        choice3()
+    if choice_done is False:
+        choice2()
+    if choice_done is False:
+        choice1()
+        
+
+
+
+ 
 
 # ------重量測定-----    #comment out for try
 
@@ -534,6 +669,7 @@ val_ave = 0
 temperture=0.0
 
 def ReadTemp():
+    pass
     datas = bus.read_i2c_block_data(address7410, register7410, 2)
     data = datas[0] << 8
     data = data | datas[1]
@@ -541,55 +677,60 @@ def ReadTemp():
     data = data/16.0
     return data
  
-bus = smbus.SMBus(1)
-address7410 = 0x48
-register7410 = 0x00
+#bus = smbus.SMBus(1)
+#address7410 = 0x48
+#register7410 = 0x00
 
-hx = HX711(24, 23)##dout,pd_sck,ネットの配線に従ってこのようにした。
-hx.set_reading_format("LSB", "MSB")
-hx.set_reference_unit(92)
-hx.reset()
-hx.tare()
+#hx = HX711(24, 23)##dout,pd_sck,ネットの配線に従ってこのようにした。
+#hx.set_reading_format("LSB", "MSB")
+#hx.set_reference_unit(92)
+#hx.reset()
+#hx.tare()
 
 def measure():
     global weight
     global setting
-    global a
-    global b
-    global c
-    global temperture
-    global val_ave
-    weight = 0
-    val_ave0 =0
-    val_ave = 0
-    val = [0,0,0,0,0] #5回測定,一回あたり0.1秒かかる
-    sum_t = 0
-    temperture=0.0 #5回測定,一回あたり0.1秒かかる
-    val[0] = hx.get_weight(1)
-    sum_t += ReadTemp()
-#    time.sleep(0.1)#もしvalの値が同じだった場合、0.1秒まって測定する
-    val[1] = hx.get_weight(1)
-    sum_t += ReadTemp()
-#    time.sleep(0.1)
-    val[2] = hx.get_weight(1)
-    sum_t += ReadTemp()
-#    time.sleep(0.1)
-    val[3] = hx.get_weight(1)
-    sum_t += ReadTemp()
-#    time.sleep(0.1)
-    val[4] = hx.get_weight(1)
-    sum_t += ReadTemp()
-    val_ave0 = sum(val)/len(val)
-    for i in val:
-        if abs(i - val_ave0)>=300:
-            del[i]
-    print val
-    val_ave = sum(val)/len(val)
-    temperture = sum_t / 5
-    weight = a * val_ave + b * temperture + c
+    weight = random.uniform(1, 220) 
+    
 
-    hx.power_down()
-    hx.power_up()
+#    global weight
+#    global setting
+#    global a
+#    global b
+#    global c
+#    global temperture
+#    global val_ave
+#    weight = 0
+#    val_ave0 =0
+#    val_ave = 0
+#    val = [0,0,0,0,0] #5回測定,一回あたり0.1秒かかる
+#    sum_t = 0
+#    temperture=0.0 #5回測定,一回あたり0.1秒かかる
+#    val[0] = hx.get_weight(1)
+#    sum_t += ReadTemp()
+##    time.sleep(0.1)#もしvalの値が同じだった場合、0.1秒まって測定する
+#    val[1] = hx.get_weight(1)
+#    sum_t += ReadTemp()
+##    time.sleep(0.1)
+#    val[2] = hx.get_weight(1)
+#    sum_t += ReadTemp()
+##    time.sleep(0.1)
+#    val[3] = hx.get_weight(1)
+#    sum_t += ReadTemp()
+##    time.sleep(0.1)
+#    val[4] = hx.get_weight(1)
+#    sum_t += ReadTemp()
+#    val_ave0 = sum(val)/len(val)
+#    for i in val:
+#        if abs(i - val_ave0)>=300:#平均と比べて、この定数よりばらついた測定値は削除する
+#            del[i]
+#    print val
+#    val_ave = sum(val)/len(val)
+#    temperture = sum_t / 5
+#    weight = a * val_ave + b * temperture + c
+#
+#    hx.power_down()
+#    hx.power_up()
 
 
 def correction():#a,bを設備ごとに(補正、)確認を自動で行う。生産時に使う関数
@@ -692,18 +833,7 @@ def correction():#a,bを設備ごとに(補正、)確認を自動で行う。生
     plt.show()
     plt.savefig(str(datetime.datetime.today().strftime("%Y/%m/%d %H:%M:%S"))+'image.png')
     
-def calibration():
-    global a
-    global b
-    global sum1
-    global setting
-    global table_code
-    global weight
-    pass
-    for i in range(16):
-        measure()
-        print weight
-        rotate_moter()  # for文の下に持ってくれば、最後の位置は0になる。
+
 
 #------回転------
 
@@ -723,20 +853,20 @@ def senbetu_rotate():
     del y_plot[1]
     table_weight.append(weight)
 
-    if setting[21] < weight and weight < setting[22]:
-        senbetu_discharge_list_a.append(9)
-    if setting[22] < weight and weight < setting[23]:
-        senbetu_discharge_list_b.append(10)
-    if setting[23] < weight and weight < setting[24]:
-        senbetu_discharge_list_c.append(11)
     if setting[24] < weight and weight < setting[25]:
+        senbetu_discharge_list_a.append(9)
+    if setting[25] < weight and weight < setting[26]:
+        senbetu_discharge_list_b.append(10)
+    if setting[26] < weight and weight < setting[27]:
+        senbetu_discharge_list_c.append(11)
+    if setting[27] < weight and weight < setting[28]:
         senbetu_discharge_list_d.append(12)
 
     # rotateしたらlistをすべて-1する。
-    senbetu_discharge_list_a = map(lambda n: n - 1, senbetu_discharge_list_a)
-    senbetu_discharge_list_b = map(lambda n: n - 1, senbetu_discharge_list_b)
-    senbetu_discharge_list_c = map(lambda n: n - 1, senbetu_discharge_list_c)
-    senbetu_discharge_list_d = map(lambda n: n - 1, senbetu_discharge_list_d)
+    senbetu_discharge_list_a = [x - 1 for x in senbetu_discharge_list_a]
+    senbetu_discharge_list_b = [x - 1 for x in senbetu_discharge_list_b]
+    senbetu_discharge_list_c = [x - 1 for x in senbetu_discharge_list_c]
+    senbetu_discharge_list_d = [x - 1 for x in senbetu_discharge_list_d]
 
 # print(discharge_i)
     # 先頭が0だったらdischarge
@@ -802,10 +932,10 @@ def rotate():
     table_weight.append(weight)
 
     # rotateしたらlistをすべて-1する。
-    discharge_list_a = map(lambda n: n - 1, discharge_list_a)
-    discharge_list_b = map(lambda n: n - 1, discharge_list_b)
-    discharge_list_c = map(lambda n: n - 1, discharge_list_c)
-    discharge_list_d = map(lambda n: n - 1, discharge_list_d)
+    discharge_list_a = [x - 1 for x in discharge_list_a]
+    discharge_list_b = [x - 1 for x in discharge_list_b]
+    discharge_list_c = [x - 1 for x in discharge_list_c]
+    discharge_list_d = [x - 1 for x in discharge_list_d]
     discharge_i -= 1
 
 # print(discharge_i)
@@ -1003,7 +1133,7 @@ class MyApp(wx.App):
             self.panel_kumiawase, wx.ID_ANY, size=(90, 30), style=wx.SP_HORIZONTAL)
         self.spinbutton_7.SetMin(0)
         self.spinbutton_7.SetMax(1000)
-        self.spinbutton_7.SetValue(setting[21])
+        self.spinbutton_7.SetValue(setting[22])
         self.spinbutton_7.Bind(wx.EVT_SPIN, spin_value_change_6)
         g.close()
         # 開始、停止ボタン
@@ -1062,31 +1192,36 @@ class MyApp(wx.App):
 #        self.s_text_19 = wx.StaticText(self.panel_kumiawase, wx.ID_ANY, u"日付")
         self.s_text_21 = wx.StaticText(self.panel_kumiawase, wx.ID_ANY, u"備考")
         self.TxtCtl_22 = wx.TextCtrl(
-            self.panel_kumiawase, -1, u"jaga", size=(150, -1), style=wx.TE_LEFT)
+            self.panel_kumiawase, -1, u"", size=(150, -1), style=wx.TE_LEFT)
         self.s_text_27 = wx.StaticText(
             self.panel_kumiawase, wx.ID_ANY, u"市場価格(円/kg)")
         self.TxtCtl_28 = wx.TextCtrl(
-            self.panel_kumiawase, -1, "500", size=(90, -1), style=wx.TE_LEFT)
+            self.panel_kumiawase, -1, str(setting[20]), size=(90, -1), style=wx.TE_LEFT)
         self.s_text_29 = wx.StaticText(
             self.panel_kumiawase, wx.ID_ANY, u"人件費(円/h)")
         self.TxtCtl_30 = wx.TextCtrl(
-            self.panel_kumiawase, -1, "800", size=(90, -1), style=wx.TE_LEFT)
+            self.panel_kumiawase, -1, str(setting[21]), size=(90, -1), style=wx.TE_LEFT)
         self.s_text_31 = wx.StaticText(
             self.panel_kumiawase, wx.ID_ANY, u"作業者数(人)")
         self.TxtCtl_32 = wx.TextCtrl(
-            self.panel_kumiawase, -1, "1", size=(90, -1), style=wx.TE_LEFT)
+            self.panel_kumiawase, -1, str(setting[22]), size=(90, -1), style=wx.TE_LEFT)
         self.s_text_33 = wx.StaticText(
             self.panel_kumiawase, wx.ID_ANY, u"日時")
         self.TxtCtl_34 = wx.TextCtrl(
-            self.panel_kumiawase, -1, "1", size=(150, -1), style=wx.TE_LEFT)
+            self.panel_kumiawase, -1, "", size=(150, -1), style=wx.TE_LEFT)
+        self.TxtCtl_34.SetBackgroundColour("#d3fff0")
         self.s_text_35 = wx.StaticText(
             self.panel_kumiawase, wx.ID_ANY, u"気温(℃)")
         self.TxtCtl_36 = wx.TextCtrl(
-            self.panel_kumiawase, -1, "1", size=(150, -1), style=wx.TE_LEFT)
+            self.panel_kumiawase, -1, "", size=(150, -1), style=wx.TE_LEFT)
+        self.TxtCtl_36.SetBackgroundColour("#d3fff0")
         # エクセルに書き込むボタン
         self.Btn22 = wx.Button(self.panel_kumiawase, -1,
                                u"保存＆リセット", size=(300, 30))
         self.Btn22.Bind(wx.EVT_BUTTON, self.KumiawaseReset)
+        self.Btn23 = wx.Button(self.panel_kumiawase, -1,
+                               u"校正", size=(300, 30))
+        self.Btn23.Bind(wx.EVT_BUTTON, self.calibration)
         self.TxtCtl_23 = wx.TextCtrl(
             self.panel_kumiawase, -1, str(float(setting[16] / 10)), size=(90, -1), style=wx.TE_LEFT)
         self.TxtCtl_24 = wx.TextCtrl(
@@ -1124,6 +1259,7 @@ class MyApp(wx.App):
         self.s_text_21.SetFont(self.font)
         self.TxtCtl_22.SetFont(self.font)
         self.Btn22.SetFont(self.font)
+        self.Btn23.SetFont(self.font)
         self.Btn1.SetFont(self.font)
         self.Btn2.SetFont(self.font)
         self.notebook.SetFont(self.font)
@@ -1207,8 +1343,9 @@ class MyApp(wx.App):
         self.layout_3_2.Add(self.TxtCtl_18)
         self.layout_3_2.Add(self.s_text_21)
         self.layout_3_2.Add(self.TxtCtl_22)
-        self.layout_3_3 = wx.GridSizer(1, 1, 5, 5)
+        self.layout_3_3 = wx.GridSizer(2, 1, 5, 5)
         self.layout_3_3.Add(self.Btn22)
+        self.layout_3_3.Add(self.Btn23)
 #        self.layout_3.Add(self.layout_3_1)
         self.layout_3.Add(self.layout_3_2)
         self.layout_3.Add(self.layout_3_3)
@@ -1420,7 +1557,7 @@ class MyApp(wx.App):
         self.senbetu_s_text_21 = wx.StaticText(
             self.panel_senbetu, wx.ID_ANY, u"備考")
         self.senbetu_TxtCtl_22 = wx.TextCtrl(
-            self.panel_senbetu, -1, u"jaga", size=(150, -1), style=wx.TE_LEFT)
+            self.panel_senbetu, -1, u"", size=(150, -1), style=wx.TE_LEFT)
         self.senbetu_s_text_27 = wx.StaticText(
             self.panel_senbetu, wx.ID_ANY, u"人件費(円)")
         self.senbetu_TxtCtl_28 = wx.TextCtrl(
@@ -1432,30 +1569,35 @@ class MyApp(wx.App):
         self.senbetu_s_text_33 = wx.StaticText(
             self.panel_senbetu, wx.ID_ANY, u"日時")
         self.senbetu_TxtCtl_34 = wx.TextCtrl(
-            self.panel_senbetu, -1, "1", size=(150, -1), style=wx.TE_LEFT)
+            self.panel_senbetu, -1, "", size=(150, -1), style=wx.TE_LEFT)
+        self.senbetu_TxtCtl_34.SetBackgroundColour("#d3fff0")
         self.senbetu_s_text_35 = wx.StaticText(
             self.panel_senbetu, wx.ID_ANY, u"気温(℃)")
         self.senbetu_TxtCtl_36 = wx.TextCtrl(
-            self.panel_senbetu, -1, "1", size=(150, -1), style=wx.TE_LEFT)
+            self.panel_senbetu, -1, "", size=(150, -1), style=wx.TE_LEFT)
+        self.senbetu_TxtCtl_36.SetBackgroundColour("#d3fff0")
 ##		self.senbetu_s_text_31 = wx.StaticText(self.panel_senbetu, wx.ID_ANY, u"作業者数(人)")
 ##		self.senbetu_TxtCtl_32 = wx.TextCtrl(self.panel_senbetu, -1, "1", size=(150,-1),style=wx.TE_LEFT)
         # エクセルに書き込むボタン
         self.senbetu_Btn22 = wx.Button(
             self.panel_senbetu, -1, u"保存＆リセット", size=(300, 30))
         self.senbetu_Btn22.Bind(wx.EVT_BUTTON, self.SenbetuReset)
+        self.senbetu_Btn23 = wx.Button(
+            self.panel_senbetu, -1, u"校正", size=(300, 30))
+        self.senbetu_Btn23.Bind(wx.EVT_BUTTON, self.calibration)
 
         self.senbetu_TxtCtl = wx.TextCtrl(
-            self.panel_senbetu, -1, str(float(setting[20] / 10)), size=(90, -1), style=wx.TE_LEFT)
+            self.panel_senbetu, -1, str(float(setting[23] / 10)), size=(90, -1), style=wx.TE_LEFT)
         self.senbetu_TxtCtl_23 = wx.TextCtrl(
-            self.panel_senbetu, -1, str(setting[21]), size=(90, -1), style=wx.TE_LEFT)
-        self.senbetu_TxtCtl_24 = wx.TextCtrl(
-            self.panel_senbetu, -1, str(setting[22]), size=(90, -1), style=wx.TE_LEFT)
-        self.senbetu_TxtCtl_25 = wx.TextCtrl(
-            self.panel_senbetu, -1, str(setting[23]), size=(90, -1), style=wx.TE_LEFT)
-        self.senbetu_TxtCtl_26 = wx.TextCtrl(
             self.panel_senbetu, -1, str(setting[24]), size=(90, -1), style=wx.TE_LEFT)
-        self.senbetu_TxtCtl_27 = wx.TextCtrl(
+        self.senbetu_TxtCtl_24 = wx.TextCtrl(
             self.panel_senbetu, -1, str(setting[25]), size=(90, -1), style=wx.TE_LEFT)
+        self.senbetu_TxtCtl_25 = wx.TextCtrl(
+            self.panel_senbetu, -1, str(setting[26]), size=(90, -1), style=wx.TE_LEFT)
+        self.senbetu_TxtCtl_26 = wx.TextCtrl(
+            self.panel_senbetu, -1, str(setting[27]), size=(90, -1), style=wx.TE_LEFT)
+        self.senbetu_TxtCtl_27 = wx.TextCtrl(
+            self.panel_senbetu, -1, str(setting[28]), size=(90, -1), style=wx.TE_LEFT)
         self.senbetu_s_text_white_6 = wx.StaticText(
             self.panel_senbetu, wx.ID_ANY, "")
         self.senbetu_s_text_white_7 = wx.StaticText(
@@ -1487,6 +1629,7 @@ class MyApp(wx.App):
         self.senbetu_s_text_21.SetFont(self.font)
         self.senbetu_TxtCtl_22.SetFont(self.font)
         self.senbetu_Btn22.SetFont(self.font)
+        self.senbetu_Btn23.SetFont(self.font)
         self.senbetu_Btn1.SetFont(self.font)
         self.senbetu_Btn2.SetFont(self.font)
         self.senbetu_s_text_0.SetFont(self.font)
@@ -1587,11 +1730,12 @@ class MyApp(wx.App):
 # self.senbetu_layout_3_2.Add(self.senbetu_TxtCtl_18)
         self.senbetu_layout_3_2.Add(self.senbetu_s_text_21)
         self.senbetu_layout_3_2.Add(self.senbetu_TxtCtl_22)
-        self.senbetu_layout_3_3 = wx.GridSizer(1, 1, 5, 5)
+        self.senbetu_layout_3_3 = wx.GridSizer(2, 1, 5, 5)
         self.senbetu_layout_3_3.Add(self.senbetu_Btn22)
+        self.senbetu_layout_3_3.Add(self.senbetu_Btn23)
 #        self.senbetu_layout_3.Add(self.senbetu_layout_3_1)
         self.senbetu_layout_3.Add(self.senbetu_layout_3_2)
-        self.senbetu_layout_3.Add(self.senbetu_Btn22)
+        self.senbetu_layout_3.Add(self.senbetu_layout_3_3)
         self.senbetu_layout_1_3 = wx.BoxSizer(wx.HORIZONTAL)
         self.senbetu_layout_1_3.Add(
             self.senbetu_layout_1, 0, flag=wx.EXPAND | wx.ALL,   border=10)
@@ -1644,11 +1788,9 @@ class MyApp(wx.App):
 
         self.wgs = file('senbetu_log.dump', 'r')
         self.wparametor_senbetu = pickle.load(self.wgs)
-#        wparametor_senbetu[-1][0]=self.senbetu_combobox_1.GetValue()
-#        wparametor_senbetu[-1][1]=self.senbetu_combobox_2.GetValue()
-#        wparametor_senbetu[-1][2]=self.senbetu_combobox_3.GetValue()
-        self.senbetu_TxtCtl_34.SetValue(str(self.wparametor[-1][1]))
-        self.senbetu_TxtCtl_36.SetValue('%.1f' % self.wparametor[-1][2])
+        self.wparametor_senbetu[-1][1]=datetime.datetime.today().strftime("%Y/%m/%d %H:%M:%S")
+        self.senbetu_TxtCtl_34.SetValue(str(self.wparametor_senbetu[-1][1]))
+        self.senbetu_TxtCtl_36.SetValue('%.1f' % self.wparametor_senbetu[-1][2])
         self.senbetu_TxtCtl_4.SetValue('%.1f' % self.wparametor_senbetu[-1][3])
         self.senbetu_TxtCtl_6.SetValue('%.1f' % self.wparametor_senbetu[-1][4])
         self.senbetu_TxtCtl_8.SetValue('%.1f' % self.wparametor_senbetu[-1][5])
@@ -1699,25 +1841,25 @@ class MyApp(wx.App):
     def KumiawaseReset(self, event):
         global start_time
 #        global stock_time
-        global today_qty
-        global today_weight
-        global dt
-        global ave_weight
-        global working_sec
-        global ave_cyecle_time
-        global ave_cyecle_cost
-        global ave_coverweight_cost
+#        global today_qty
+#        global today_weight
+#        global dt
+#        global ave_weight
+#        global working_sec
+#        global ave_cyecle_time
+#        global ave_cyecle_cost
+#        global ave_coverweight_cost
 
         dial = wx.MessageDialog(None, u'エクセルファイル　log.xls　にデータを保存しリセットします。よろしいですか？', u'保存&リセット',
-                                wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
+                                wx.YES_NO | wx.NO_DEFAULT)
         res = dial.ShowModal()
 
         if res == wx.ID_YES:
             book = xlwt.Workbook()
             newSheet_1 = book.add_sheet('NewSheet_1')
-            newSheet_1.write(0, 0, u"日付(年)")
-            newSheet_1.write(0, 1, u"日付(月)")
-            newSheet_1.write(0, 2, u"日付(日)")
+            newSheet_1.write(0, 0, u"")
+            newSheet_1.write(0, 1, u"日時")
+            newSheet_1.write(0, 2, u"気温(℃)")
             newSheet_1.write(0, 3, u"生産数(袋数)")
             newSheet_1.write(0, 4, u"生産量(kg)")
             newSheet_1.write(0, 5, u"平均重量(g/袋)")
@@ -1730,21 +1872,21 @@ class MyApp(wx.App):
             g = file('log.dump', 'r')
             parametor = pickle.load(g)
 
-            for i in range(len(parametor)):
-                newSheet_1.write(i + 1, 0, parametor[i][0])
-                newSheet_1.write(i + 1, 1, parametor[i][1])
-                newSheet_1.write(i + 1, 2, parametor[i][2])
-                newSheet_1.write(i + 1, 3, parametor[i][3])
-                newSheet_1.write(i + 1, 4, '%.1f' % parametor[i][4])
-                newSheet_1.write(i + 1, 5, '%.1f' % parametor[i][5])
+            for i in range(len(parametor)-1):
+#                newSheet_1.write(i + 1, 0, parametor[i][0])
+                newSheet_1.write(i + 1, 1, parametor[i+1][1])
+                newSheet_1.write(i + 1, 2, parametor[i+1][2])
+                newSheet_1.write(i + 1, 3, parametor[i+1][3])
+                newSheet_1.write(i + 1, 4, '%.1f' % parametor[i+1][4])
+                newSheet_1.write(i + 1, 5, '%.1f' % parametor[i+1][5])
                 newSheet_1.write(
-                    i + 1, 6, str(str(parametor[i][6]).split('.')[0]))
-                newSheet_1.write(i + 1, 7, '%.1f' % parametor[i][7])
-                newSheet_1.write(i + 1, 8, '%.1f' % parametor[i][8])
-                newSheet_1.write(i + 1, 9, '%.1f' % parametor[i][9])
-                newSheet_1.write(i + 1, 10, parametor[i][10])
+                    i + 1, 6, str(str(parametor[i+1][6]).split('.')[0]))
+                newSheet_1.write(i + 1, 7, '%.1f' % parametor[i+1][7])
+                newSheet_1.write(i + 1, 8, '%.1f' % parametor[i+1][8])
+                newSheet_1.write(i + 1, 9, '%.1f' % parametor[i+1][9])
+                newSheet_1.write(i + 1, 10, parametor[i+1][10])
 
-            parametor.append([])
+            parametor.append(["", "", 25.0, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 0.0, ""])
             print 'parametor=', parametor
             g.close()
             book.save('kumiawase_log.xls')
@@ -1752,16 +1894,16 @@ class MyApp(wx.App):
             pickle.dump(parametor, f)
             f.close()
 
-            start_time = datetime.datetime.today()
+#            start_time = datetime.datetime.today()
             # -1day とかになってしまうのを防ぐため、-senbetu_stop_timeを入れている。
 #            senbetu_stock_time = datetime.datetime.today() - senbetu_stop_time
-            today_qty = 0
-            today_weight = 0
-            ave_weight = 0
-            working_sec = 0
-            ave_cyecle_time = 0
-            ave_cyecle_cost = 0
-            ave_coverweight_cost = 0
+#            today_qty = 0
+#            today_weight = 0
+#            ave_weight = 0
+#            working_sec = 0
+#            ave_cyecle_time = 0
+#            ave_cyecle_cost = 0
+#            ave_coverweight_cost = 0
 
         elif res == wx.ID_NO:
             pass
@@ -1803,23 +1945,23 @@ class MyApp(wx.App):
     def SenbetuReset(self, event):
         global senbetu_start_time
 #        global senbetu_stock_time
-        global senbetu_today_qty
-        global senbetu_today_weight
-        global senbetu_ave_weight
-        global senbetu_working_sec
-        global senbetu_ave_cyecle_time
-        global senbetu_ave_cyecle_cost
+#        global senbetu_today_qty
+#        global senbetu_today_weight
+#        global senbetu_ave_weight
+#        global senbetu_working_sec
+#        global senbetu_ave_cyecle_time
+#        global senbetu_ave_cyecle_cost
 
         dial = wx.MessageDialog(None, u'エクセルファイル　log.xls　にデータを保存しリセットします。よろしいですか？', u'保存&リセット',
-                                wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
+                                wx.YES_NO | wx.NO_DEFAULT)
         res = dial.ShowModal()
 
         if res == wx.ID_YES:
             book = xlwt.Workbook()
             newSheet_2 = book.add_sheet('NewSheet_1')
-            newSheet_2.write(0, 0, u"日付(年)")
-            newSheet_2.write(0, 1, u"日付(月)")
-            newSheet_2.write(0, 2, u"日付(日)")
+            newSheet_2.write(0, 0, u"")
+            newSheet_2.write(0, 1, u"日時")
+            newSheet_2.write(0, 2, u"気温(℃)")
             newSheet_2.write(0, 3, u"生産数(個)")
             newSheet_2.write(0, 4, u"生産量(kg)")
             newSheet_2.write(0, 5, u"平均重量(g/個)")
@@ -1832,40 +1974,60 @@ class MyApp(wx.App):
             g = file('senbetu_log.dump', 'r')
             senbetu_parametor = pickle.load(g)
 
-            for i in range(len(parametor)):
-                newSheet_2.write(i + 1, 0, senbetu_parametor[i][0])
-                newSheet_2.write(i + 1, 1, senbetu_parametor[i][1])
-                newSheet_2.write(i + 1, 2, senbetu_parametor[i][2])
-                newSheet_2.write(i + 1, 3, senbetu_parametor[i][3])
-                newSheet_2.write(i + 1, 4, '%.1f' % senbetu_parametor[i][4])
-                newSheet_2.write(i + 1, 5, '%.1f' % senbetu_parametor[i][5])
+            for i in range(len(parametor)-1):
+#                newSheet_2.write(i + 1, 0, senbetu_parametor[i][0])
+                newSheet_2.write(i + 1, 1, senbetu_parametor[i+1][1])
+                newSheet_2.write(i + 1, 2, senbetu_parametor[i+1][2])
+                newSheet_2.write(i + 1, 3, senbetu_parametor[i+1][3])
+                newSheet_2.write(i + 1, 4, '%.1f' % senbetu_parametor[i+1][4])
+                newSheet_2.write(i + 1, 5, '%.1f' % senbetu_parametor[i+1][5])
                 newSheet_2.write(
-                    i + 1, 6, str(str(senbetu_parametor[i][6]).split('.')[0]))
-                newSheet_2.write(i + 1, 7, '%.1f' % senbetu_parametor[i][7])
-                newSheet_2.write(i + 1, 8, '%.1f' % senbetu_parametor[i][8])
-                newSheet_2.write(i + 1, 9, senbetu_parametor[i][9])
+                    i + 1, 6, str(str(senbetu_parametor[i+1][6]).split('.')[0]))
+                newSheet_2.write(i + 1, 7, '%.1f' % senbetu_parametor[i+1][7])
+                newSheet_2.write(i + 1, 8, '%.1f' % senbetu_parametor[i+1][8])
+                newSheet_2.write(i + 1, 9, senbetu_parametor[i+1][9])
 
-            senbetu_parametor.append([u"日付(年)", "", "", 0, 0.0, 0.0, 0, 0.0, 0.0, 0.0, "", u"日付(年)", "", "", 0, 0.0, 0.0, 0, 0.0, 0.0, ""])
+            senbetu_parametor.append(["", "", 25.0, 0.0, 0.0, 0.0, 0, 0.0, 0.0, ""])
             g.close()
             book.save('senbetu_log.xls')
             f = file('senbetu_log.dump', 'w')
             pickle.dump(senbetu_parametor, f)
             f.close()
 
-            senbetu_start_time = datetime.datetime.today()
+#            senbetu_start_time = datetime.datetime.today()
             # -1day とかになってしまうのを防ぐため、-senbetu_stop_timeを入れている。
 #            senbetu_stock_time = datetime.datetime.today() - senbetu_stop_time
-            senbetu_today_qty = 0
-            senbetu_today_weight = 0
-            senbetu_ave_weight = 0
-            senbetu_working_sec = 0
-            senbetu_ave_cyecle_time = 0
-            senbetu_ave_cyecle_cost = 0
+#            senbetu_today_qty = 0
+#            senbetu_today_weight = 0
+#            senbetu_ave_weight = 0
+#            senbetu_working_sec = 0
+#            senbetu_ave_cyecle_time = 0
+#            senbetu_ave_cyecle_cost = 0
 
         elif res == wx.ID_NO:
             pass
 
         dial.Destroy()
+        
+    def calibration(self, event):
+        global sum1
+        global setting
+        global weight
+        for i in range(16):
+            for i in xrange(4):
+                measure()
+                sum_c += weight
+            ave_c = sum_c/4.0
+            print ave_c
+            if ave_c >= 1:
+                dial = wx.MessageDialog(None, u'測定重量が1g以上になりました。テーブルに何も載っていないか、テーブルにゴミが載ってないかなどチェックし、OKボタンを押してください。', u'重量エラー',
+                                        wx.ICON_QUESTION)
+                res = dial.ShowModal()
+            if -1 >= ave_c:
+                dial = wx.MessageDialog(None, u'測定重量が-1g以下になってます。テーブルが重量測定プレートにしっかり接触しているかチェックし、OKボタンを押してください。', u'重量エラー',
+                                        wx.ICON_QUESTION)
+                res = dial.ShowModal()
+            rotate_moter()  # for文の下に持ってくれば、最後の位置は0になる。
 
 #------main------
 def KumiawaseRun():
@@ -1910,11 +2072,11 @@ def KumiawaseRun():
             final_sumweight_a, final_sumweight_b, final_sumweight_c, final_sumweight_d]
         
 
-        table_code += 1
-        if table_code == 16:
-            table_code = 0  # 0に戻す
+#        table_code += 1
+#        if table_code == 16:
+#            table_code = 0  # 0に戻す
         rotate_moter()
-        measure(table_code)
+        measure()
         print weight
         rotate()
         i += 1
@@ -2006,11 +2168,11 @@ def SenbetuRun():
     while True:
         senbetu_event.wait()
 
-        senbetu_table_code += 1
-        if senbetu_table_code == 16:
-            senbetu_table_code = 0  # 0に戻す
+#        senbetu_table_code += 1
+#        if senbetu_table_code == 16:
+#            senbetu_table_code = 0  # 0に戻す
         rotate_moter()
-        measure(senbetu_table_code)
+        measure()
         print weight
         senbetu_rotate()
 
