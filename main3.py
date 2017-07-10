@@ -5,11 +5,8 @@ import numpy as np
 import random
 ##import RPi.GPIO as GPIO
 ##import wiringpi2 as wiringpi
-import sys
-import csv
 ##import Adafruit_PCA9685
 import time
-import itertools
 from itertools import combinations
 from collections import Counter
 import wx
@@ -21,15 +18,8 @@ import matplotlib.gridspec as gridspec
 from matplotlib.font_manager import FontProperties
 import warnings
 warnings.filterwarnings('ignore')
-#import wx.lib.agw.flatnotebook as fnb
-from multiprocessing import Process, Value, Array, Queue
 from threading import (Event, Thread)
-import datetime
-import sys
 #from hx711 import HX711
-import numpy as np
-import matplotlib.pyplot as plt
-import numpy as np
 #from scipy import linalg as LA
 #import smbus
 
@@ -54,25 +44,6 @@ setting = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,0.0, 0.0, 0.0, 
 # setting[16]からsetting[30]がsetting
 pickle.dump(setting, f)
 f.close()
-
-#setting[16]#停止(秒)
-#setting[17]平均重量(g)
-#setting[18]上限重量(g)
-#setting[19]下限重量(g)
-#setting[20]#市場価格(円/kg)
-#setting[21]#人件費(円/h)
-#setting[22]#作業者数(人)
-#senbetu_s_text 停止(秒) setting[23]
-#senbetu_s_text_S S setting[24]
-#senbetu_s_text_S S setting[25]
-#senbetu_s_text_M M setting[26]
-#senbetu_s_text_L L setting[27]
-#senbetu_s_text_2L 2L setting[28]
-#setting[29]#人件費(円/h)
-#setting[30]#作業者数(人)
-
-table_code=0
-senbetu_table_code=0
 
 # fp = FontProperties(fname=r'C:\Users\2140022\Desktop\プログラム\ipaexg.ttf', size=14)#'C:\Users\USER\Downloads\ipaexg.ttf'
 x_plot = [1]
@@ -100,28 +71,20 @@ discharge_list_b = []
 discharge_list_c = []
 discharge_list_d = []
 discharge_i = 10
-discharge_a_offset = True
-discharge_b_offset = True
-discharge_c_offset = True
-discharge_d_offset = True
 spare_num_a = []
 spare_num_b = []
 spare_num_c = []
 spare_num_d = []
 spare_i = 0
-spare_sumweight_a = []
-spare_sumweight_b = []
-spare_sumweight_c = []
-spare_sumweight_d = []
+spare_sumweight_a = 0
+spare_sumweight_b = 0
+spare_sumweight_c = 0
+spare_sumweight_d = 0
 numbering = 0
 senbetu_discharge_list_a = []
 senbetu_discharge_list_b = []
 senbetu_discharge_list_c = []
 senbetu_discharge_list_d = []
-table_code = 0  # 各テーブルの番号
-mode_switch = True  # Trueなら組み合わせ、Falseなら選別のモード
-
-final_sumweight = [0,0,0,0]
 
 kumiawase_event = Event()
 senbetu_event = Event()
@@ -317,7 +280,6 @@ def choice():  # 4 dischargers
     allcombi_num = powerset(table_num)
     allcombi_weight = powerset(table_weight)
     # 全組合せweightと目標値の差分のlist作成
-    sum_table_weight = sum(table_weight)  # sum_table_weight=614.340676246
     for j in allcombi_weight:
         allcombi_weight_dif.append(abs(sum(j) - setting[17]))
 
@@ -329,8 +291,6 @@ def choice():  # 4 dischargers
     def flatten(nested_list):
         """2重のリストをフラットにする関数"""
         return [e for inner_list in nested_list for e in inner_list]
-
-    table_num_1 = table_num[:]
     
     choice_done = False
     
@@ -844,6 +804,7 @@ def senbetu_rotate():
     global senbetu_discharge_list_b
     global senbetu_discharge_list_c
     global senbetu_discharge_list_d
+    global y_plot
 
     # print "回転"
 # weight=random.gauss(102.5,25)#トライ用のコード。テーブルにワークが乗っかったと仮定。
@@ -893,10 +854,6 @@ def senbetu_rotate():
 
 
 def rotate():
-    ##	global discharge_a_offset
-    ##	global discharge_b_offset
-    ##	global discharge_c_offset
-    ##	global discharge_d_offset
     global weight
     global table_num
     global table_weight
@@ -916,10 +873,7 @@ def rotate():
     global spare_i
     global discharge_i
     global numbering
-    global final_sumweight_a
-    global final_sumweight_b
-    global final_sumweight_c
-    global final_sumweight_d
+    global y_plot
 
     # print "回転"
     table_num.append(i)
@@ -942,15 +896,10 @@ def rotate():
     # 先頭が0だったらdischarge
     if len(discharge_list_a) > 0:
         if discharge_list_a[0] == 0:
-            # 位置をずらして排出させることで山盛りになるのを防ぐ
-            # if discharge_a_offset is True:
-            # sleep(1)
             discharge_a()
             print "a排出"
             print(numbering + 1)
             discharge_list_a.remove(0)  # 0を消す
-# 排出位置を交互にずらす
-# discharge_a_offset=not(discharge_a_offset)
     #	print "a排出"
     if len(discharge_list_b) > 0:
         if discharge_list_b[0] == 0:
@@ -982,22 +931,8 @@ def rotate():
         discharge_list_d = spare_num_d
         discharge_i = spare_i
         numbering = 0
-# print(discharge_list_a)
-# print(discharge_list_b)
-# print(discharge_list_c)
-# print(discharge_list_d)
-# print(spare_sumweight_a)
-# print(spare_sumweight_b)
-# print(spare_sumweight_c)
-# print(spare_sumweight_d)
-        final_sumweight_a = spare_sumweight_a
-        final_sumweight_b = spare_sumweight_b
-        final_sumweight_c = spare_sumweight_c
-        final_sumweight_d = spare_sumweight_d
-# switch on になるまでストップしている
-# GPIO.wait_for_edge(4, GPIO.RISING) #comment out for try
-# break
-
+        #switch on になるまでストップしている
+        #GPIO.wait_for_edge(4, GPIO.RISING) #comment out for try
 
 
 
@@ -1065,8 +1000,6 @@ class MyApp(wx.App):
                             pos=(5, 5), size=wx.Size(width, height))
 
         # タブ
-# self.notebook = fnb.FlatNotebook(self.Frm, wx.ID_ANY, agwStyle=fnb.FNB_X_ON_TAB |
-# fnb.FNB_NO_X_BUTTON)
         self.notebook = wx.Notebook(self.Frm, wx.ID_ANY)
 
         # 各タブのパネルの設定
@@ -1142,18 +1075,6 @@ class MyApp(wx.App):
         self.Btn1.Bind(wx.EVT_BUTTON, self.KumiawaseStart)
         self.Btn2.Bind(wx.EVT_BUTTON, self.KumiawaseStop)
         # 記録欄のテキスト
-#        element_array_1 = ("", u"17年", u"18年", u"19年", u"20年",
-#                           u"21年", u"22年", u"23年", u"24年", u"25年", u"26年")
-#        self.combobox_1 = wx.ComboBox(
-#            self.panel_kumiawase, wx.ID_ANY, u"年", choices=element_array_1, style=wx.CB_DROPDOWN)
-#        element_array_2 = ("", u"1月", u"2月", u"3月", u"4月", u"5月",
-#                           u"6月", u"7月", u"8月", u"9月", u"10月", u"11月", u"12月")
-#        self.combobox_2 = wx.ComboBox(
-#            self.panel_kumiawase, wx.ID_ANY, u"月", choices=element_array_2, style=wx.CB_DROPDOWN)
-#        element_array_3 = ("", u"1日", u"2日", u"3日", u"4日", u"5日", u"6日", u"7日", u"8日", u"9日", u"10日", u"11日", u"12日", u"13日", u"14日", u"15日",
-#                           u"16日", u"17日", u"18日", u"19日", u"20日", u"21日", u"22日", u"23日", u"24日", u"25日", u"26日", u"27日", u"28日", u"29日", u"30日", u"31日")
-#        self.combobox_3 = wx.ComboBox(
-#            self.panel_kumiawase, wx.ID_ANY, u"日", choices=element_array_3, style=wx.CB_DROPDOWN)
         self.s_text_5 = wx.StaticText(
             self.panel_kumiawase, wx.ID_ANY, u"生産数(袋数)")
         self.TxtCtl_6 = wx.TextCtrl(
@@ -1189,7 +1110,6 @@ class MyApp(wx.App):
         self.TxtCtl_18 = wx.TextCtrl(
             self.panel_kumiawase, -1, "", size=(150, -1), style=wx.TE_LEFT)
         self.TxtCtl_18.SetBackgroundColour("#d3fff0")
-#        self.s_text_19 = wx.StaticText(self.panel_kumiawase, wx.ID_ANY, u"日付")
         self.s_text_21 = wx.StaticText(self.panel_kumiawase, wx.ID_ANY, u"備考")
         self.TxtCtl_22 = wx.TextCtrl(
             self.panel_kumiawase, -1, u"", size=(150, -1), style=wx.TE_LEFT)
@@ -1219,6 +1139,7 @@ class MyApp(wx.App):
         self.Btn22 = wx.Button(self.panel_kumiawase, -1,
                                u"保存＆リセット", size=(300, 30))
         self.Btn22.Bind(wx.EVT_BUTTON, self.KumiawaseReset)
+        # 校正ボタン
         self.Btn23 = wx.Button(self.panel_kumiawase, -1,
                                u"校正", size=(300, 30))
         self.Btn23.Bind(wx.EVT_BUTTON, self.calibration)
@@ -1255,7 +1176,6 @@ class MyApp(wx.App):
         self.TxtCtl_16.SetFont(self.font)
         self.s_text_17.SetFont(self.font)
         self.TxtCtl_18.SetFont(self.font)
-#        self.s_text_19.SetFont(self.font)
         self.s_text_21.SetFont(self.font)
         self.TxtCtl_22.SetFont(self.font)
         self.Btn22.SetFont(self.font)
@@ -1281,9 +1201,6 @@ class MyApp(wx.App):
         self.TxtCtl_34.SetFont(self.font_1)
         self.s_text_35.SetFont(self.font)
         self.TxtCtl_36.SetFont(self.font)
-#        self.combobox_1.SetFont(self.font_1)
-#        self.combobox_2.SetFont(self.font_1)
-#        self.combobox_3.SetFont(self.font_1)
 
         # レイアウト
         self.layout_1 = wx.BoxSizer(wx.VERTICAL)
@@ -1316,12 +1233,6 @@ class MyApp(wx.App):
         self.layout_1.Add(self.layout_1_2)
 
         self.layout_3 = wx.BoxSizer(wx.VERTICAL)
-#        self.layout_3_1 = wx.GridSizer(1, 5, 5, 5)
-#        self.layout_3_1.Add(self.s_text_19)
-#        self.layout_3_1.Add(self.s_text_white_6)
-#        self.layout_3_1.Add(self.combobox_1)
-#        self.layout_3_1.Add(self.combobox_2)
-#        self.layout_3_1.Add(self.combobox_3)
         self.layout_3_2 = wx.GridSizer(10, 2, 5, 5)
         self.layout_3_2.Add(self.s_text_33)
         self.layout_3_2.Add(self.TxtCtl_34)
@@ -1346,7 +1257,6 @@ class MyApp(wx.App):
         self.layout_3_3 = wx.GridSizer(2, 1, 5, 5)
         self.layout_3_3.Add(self.Btn22)
         self.layout_3_3.Add(self.Btn23)
-#        self.layout_3.Add(self.layout_3_1)
         self.layout_3.Add(self.layout_3_2)
         self.layout_3.Add(self.layout_3_3)
         self.layout_1_3 = wx.BoxSizer(wx.HORIZONTAL)
@@ -1506,16 +1416,6 @@ class MyApp(wx.App):
         self.senbetu_Btn1.Bind(wx.EVT_BUTTON, self.SenbetuStart)
         self.senbetu_Btn2.Bind(wx.EVT_BUTTON, self.SenbetuStop)
         # 記録欄のテキスト
-#        senbetu_element_array_1 = (
-#            "", u"17年", u"18年", u"19年", u"20年", u"21年", u"22年", u"23年", u"24年", u"25年", u"26年")
-#        self.senbetu_combobox_1 = wx.ComboBox(
-#            self.panel_senbetu, wx.ID_ANY, u"年", choices=element_array_1, style=wx.CB_DROPDOWN)
-#        senbetu_element_array_2 = ("", u"1月", u"2月", u"3月", u"4月",
-#                                   u"5月", u"6月", u"7月", u"8月", u"9月", u"10月", u"11月", u"12月")
-#        self.senbetu_combobox_2 = wx.ComboBox(
-#            self.panel_senbetu, wx.ID_ANY, u"月", choices=element_array_2, style=wx.CB_DROPDOWN)
-#        senbetu_element_array_3 = ("", u"1日", u"2日", u"3日", u"4日", u"5日", u"6日", u"7日", u"8日", u"9日", u"10日", u"11日", u"12日", u"13日", u"14日",
-#                                   u"15日", u"16日", u"17日", u"18日", u"19日", u"20日", u"21日", u"22日", u"23日", u"24日", u"25日", u"26日", u"27日", u"28日", u"29日", u"30日", u"31日")
         self.senbetu_s_text_3 = wx.StaticText(
             self.panel_senbetu, wx.ID_ANY, u"生産数(個)")
         self.senbetu_TxtCtl_4 = wx.TextCtrl(
@@ -1546,14 +1446,6 @@ class MyApp(wx.App):
         self.senbetu_TxtCtl_14 = wx.TextCtrl(
             self.panel_senbetu, -1, "", size=(150, -1), style=wx.TE_LEFT)
         self.senbetu_TxtCtl_14.SetBackgroundColour("#d3fff0")
-##		self.senbetu_s_text_15 = wx.StaticText(self.panel_senbetu, wx.ID_ANY, u"作業コスト(円/袋)")
-##		self.senbetu_TxtCtl_16 = wx.TextCtrl(self.panel_senbetu, -1, "", size=(150,-1),style=wx.TE_LEFT)
-# self.senbetu_TxtCtl_16.SetBackgroundColour("#d3fff0")
-##		self.senbetu_s_text_17 = wx.StaticText(self.panel_senbetu, wx.ID_ANY, u"作業時間")
-##		self.senbetu_TxtCtl_18 = wx.TextCtrl(self.panel_senbetu, -1, "", size=(150,-1),style=wx.TE_LEFT)
-# self.senbetu_TxtCtl_18.SetBackgroundColour("#d3fff0")
-#        self.senbetu_s_text_19 = wx.StaticText(
-#            self.panel_senbetu, wx.ID_ANY, u"日付")
         self.senbetu_s_text_21 = wx.StaticText(
             self.panel_senbetu, wx.ID_ANY, u"備考")
         self.senbetu_TxtCtl_22 = wx.TextCtrl(
@@ -1576,8 +1468,6 @@ class MyApp(wx.App):
         self.senbetu_TxtCtl_36 = wx.TextCtrl(
             self.panel_senbetu, -1, "", size=(150, -1), style=wx.TE_LEFT)
         self.senbetu_TxtCtl_36.SetBackgroundColour("#d3fff0")
-##		self.senbetu_s_text_31 = wx.StaticText(self.panel_senbetu, wx.ID_ANY, u"作業者数(人)")
-##		self.senbetu_TxtCtl_32 = wx.TextCtrl(self.panel_senbetu, -1, "1", size=(150,-1),style=wx.TE_LEFT)
         # エクセルに書き込むボタン
         self.senbetu_Btn22 = wx.Button(
             self.panel_senbetu, -1, u"保存＆リセット", size=(300, 30))
@@ -1621,11 +1511,6 @@ class MyApp(wx.App):
         self.senbetu_TxtCtl_12.SetFont(self.font)
         self.senbetu_s_text_13.SetFont(self.font)
         self.senbetu_TxtCtl_14.SetFont(self.font)
-# self.senbetu_s_text_15.SetFont(self.font)
-# self.senbetu_TxtCtl_16.SetFont(self.font)
-# self.senbetu_s_text_17.SetFont(self.font)
-# self.senbetu_TxtCtl_18.SetFont(self.font)
-#        self.senbetu_s_text_19.SetFont(self.font)
         self.senbetu_s_text_21.SetFont(self.font)
         self.senbetu_TxtCtl_22.SetFont(self.font)
         self.senbetu_Btn22.SetFont(self.font)
@@ -1653,12 +1538,6 @@ class MyApp(wx.App):
         self.senbetu_TxtCtl_34.SetFont(self.font_1)
         self.senbetu_s_text_35.SetFont(self.font)
         self.senbetu_TxtCtl_36.SetFont(self.font)
-# self.senbetu_s_text_31.SetFont(self.font)
-# self.senbetu_TxtCtl_32.SetFont(self.font)
-
-#        self.senbetu_combobox_1.SetFont(self.font_1)
-#        self.senbetu_combobox_2.SetFont(self.font_1)
-#        self.senbetu_combobox_3.SetFont(self.font_1)
 
         # レイアウト
         self.senbetu_layout_1 = wx.BoxSizer(wx.VERTICAL)
@@ -1695,18 +1574,10 @@ class MyApp(wx.App):
         self.senbetu_layout_1_2.Add(self.senbetu_s_text_29)
         self.senbetu_layout_1_2.Add(self.senbetu_TxtCtl_30)
         self.senbetu_layout_1_2.Add(self.senbetu_spinbutton_7)
-# self.senbetu_layout_1_3.Add(self.senbetu_s_text_31)
-# self.senbetu_layout_1_3.Add(self.senbetu_TxtCtl_32)
         self.senbetu_layout_1.Add(self.senbetu_layout_1_1)
         self.senbetu_layout_1.Add(self.senbetu_layout_1_2)
 
         self.senbetu_layout_3 = wx.BoxSizer(wx.VERTICAL)
-#        self.senbetu_layout_3_1 = wx.GridSizer(1, 5, 5, 5)
-#        self.senbetu_layout_3_1.Add(self.senbetu_s_text_19)
-#        self.senbetu_layout_3_1.Add(self.senbetu_s_text_white_6)
-#        self.senbetu_layout_3_1.Add(self.senbetu_combobox_1)
-#        self.senbetu_layout_3_1.Add(self.senbetu_combobox_2)
-#        self.senbetu_layout_3_1.Add(self.senbetu_combobox_3)
         self.senbetu_layout_3_2 = wx.GridSizer(9, 2, 5, 5)
         self.senbetu_layout_3_2.Add(self.senbetu_s_text_33)
         self.senbetu_layout_3_2.Add(self.senbetu_TxtCtl_34)
@@ -1724,16 +1595,11 @@ class MyApp(wx.App):
         self.senbetu_layout_3_2.Add(self.senbetu_TxtCtl_12)
         self.senbetu_layout_3_2.Add(self.senbetu_s_text_13)
         self.senbetu_layout_3_2.Add(self.senbetu_TxtCtl_14)
-# self.senbetu_layout_3_2.Add(self.senbetu_s_text_15)
-# self.senbetu_layout_3_2.Add(self.senbetu_TxtCtl_16)
-# self.senbetu_layout_3_2.Add(self.senbetu_s_text_17)
-# self.senbetu_layout_3_2.Add(self.senbetu_TxtCtl_18)
         self.senbetu_layout_3_2.Add(self.senbetu_s_text_21)
         self.senbetu_layout_3_2.Add(self.senbetu_TxtCtl_22)
         self.senbetu_layout_3_3 = wx.GridSizer(2, 1, 5, 5)
         self.senbetu_layout_3_3.Add(self.senbetu_Btn22)
         self.senbetu_layout_3_3.Add(self.senbetu_Btn23)
-#        self.senbetu_layout_3.Add(self.senbetu_layout_3_1)
         self.senbetu_layout_3.Add(self.senbetu_layout_3_2)
         self.senbetu_layout_3.Add(self.senbetu_layout_3_3)
         self.senbetu_layout_1_3 = wx.BoxSizer(wx.HORIZONTAL)
@@ -1779,7 +1645,6 @@ class MyApp(wx.App):
         self.TxtCtl_18.SetValue('%.1f' % self.wparametor[-1][9])
         if working_sec_sw is True:
             self.wparametor[-1][6]+=1
-#        wparametor[-1][10]=self.TxtCtl_22.GetValue()
         
         self.wf = file('log.dump', 'w')
         pickle.dump(self.wparametor, self.wf)
@@ -1800,7 +1665,6 @@ class MyApp(wx.App):
         self.senbetu_TxtCtl_10.SetValue(('%02d'%hs)+":"+('%02d'%ms)+":"+('%02d'%ss))
         self.senbetu_TxtCtl_12.SetValue('%.1f' % self.wparametor_senbetu[-1][7])
         self.senbetu_TxtCtl_14.SetValue('%.1f' % self.wparametor_senbetu[-1][8])
-#        wparametor_senbetu[-1][9]=self.senbetu_TxtCtl_22.GetValue()
         if senbetu_working_sec_sw is True:
             self.wparametor_senbetu[-1][6]+=1
 
@@ -1810,46 +1674,37 @@ class MyApp(wx.App):
         self.wgs.close()
 
     def KumiawaseStart(self, event):
-#        global stock_time
-        global stop_time
-        global start_time
-        global stop_trigger
         global working_sec_sw
         # Kumiawaseを出来なくする
         self.Btn1.Disable()
         self.Btn2.Enable()
         self.senbetu_Btn1.Disable()
         self.senbetu_Btn2.Disable()
+        self.Btn22.Disable()
+        self.Btn23.Disable()
+        self.senbetu_Btn22.Disable()
+        self.senbetu_Btn23.Disable()
+        
         working_sec_sw=True
         kumiawase_event.set()
 
     def KumiawaseStop(self, event):
-#        global stock_time
-        global stop_time
-        global start_time
         global working_sec_sw
         # Kumiawaseとsenbetuを出来るようにする
         self.Btn1.Enable()
         self.Btn2.Disable()
         self.senbetu_Btn1.Enable()
         self.senbetu_Btn2.Disable()
+        self.Btn22.Enable()
+        self.Btn23.Enable()
+        self.senbetu_Btn22.Enable()
+        self.senbetu_Btn23.Enable()
         working_sec_sw=False
         print 'Kumiawase_stop'
         kumiawase_event.clear()
 
     # reset&add
     def KumiawaseReset(self, event):
-        global start_time
-#        global stock_time
-#        global today_qty
-#        global today_weight
-#        global dt
-#        global ave_weight
-#        global working_sec
-#        global ave_cyecle_time
-#        global ave_cyecle_cost
-#        global ave_coverweight_cost
-
         dial = wx.MessageDialog(None, u'エクセルファイル　log.xls　にデータを保存しリセットします。よろしいですか？', u'保存&リセット',
                                 wx.YES_NO | wx.NO_DEFAULT)
         res = dial.ShowModal()
@@ -1894,16 +1749,6 @@ class MyApp(wx.App):
             pickle.dump(parametor, f)
             f.close()
 
-#            start_time = datetime.datetime.today()
-            # -1day とかになってしまうのを防ぐため、-senbetu_stop_timeを入れている。
-#            senbetu_stock_time = datetime.datetime.today() - senbetu_stop_time
-#            today_qty = 0
-#            today_weight = 0
-#            ave_weight = 0
-#            working_sec = 0
-#            ave_cyecle_time = 0
-#            ave_cyecle_cost = 0
-#            ave_coverweight_cost = 0
 
         elif res == wx.ID_NO:
             pass
@@ -1913,9 +1758,6 @@ class MyApp(wx.App):
 ###############################################################
 
     def SenbetuStart(self, event):
-#        global senbetu_stock_time
-        global senbetu_stop_time
-        global senbetu_start_time
         global senbetu_event
         global senbetu_working_sec_sw
         # Kumiawaseを出来なくする
@@ -1923,35 +1765,37 @@ class MyApp(wx.App):
         self.Btn2.Disable()
         self.senbetu_Btn1.Disable()
         self.senbetu_Btn2.Enable()
+        self.Btn22.Disable()
+        self.Btn23.Disable()
+        self.senbetu_Btn22.Disable()
+        self.senbetu_Btn23.Disable()
         senbetu_working_sec_sw=True
         senbetu_event.set()
 
     def SenbetuStop(self, event):
-#        global senbetu_stock_time
-        global senbetu_stop_time
-        global senbetu_start_time
         global senbetu_event
         global senbetu_working_sec_sw
+        global i
+        global table_num
+        global table_weight
+        table_num = []
+        table_weight = []
+        i=0
         # Kumiawaseを出来るようにする
         self.Btn1.Enable()
         self.Btn2.Disable()
         self.senbetu_Btn1.Enable()
         self.senbetu_Btn2.Disable()
+        self.Btn22.Enable()
+        self.Btn23.Enable()
+        self.senbetu_Btn22.Enable()
+        self.senbetu_Btn23.Enable()
         senbetu_working_sec_sw=False
         print 'senbetu_stop'
         senbetu_event.clear()
 
     # reset&add
     def SenbetuReset(self, event):
-        global senbetu_start_time
-#        global senbetu_stock_time
-#        global senbetu_today_qty
-#        global senbetu_today_weight
-#        global senbetu_ave_weight
-#        global senbetu_working_sec
-#        global senbetu_ave_cyecle_time
-#        global senbetu_ave_cyecle_cost
-
         dial = wx.MessageDialog(None, u'エクセルファイル　log.xls　にデータを保存しリセットします。よろしいですか？', u'保存&リセット',
                                 wx.YES_NO | wx.NO_DEFAULT)
         res = dial.ShowModal()
@@ -1969,7 +1813,6 @@ class MyApp(wx.App):
             newSheet_2.write(0, 7, u"作業時間(秒/kg)")
             newSheet_2.write(0, 8, u"作業コスト(円/kg)")
             newSheet_2.write(0, 9, u"備考")
-            # parametor=[[/0/u"日付(年)",/1/"",/2/"",/3/0,/4/0.0,/5/0.0,/6/0,/7/0.0,/8/0.0,/9/0.0,/10/"",/11/u"日付(年)",/12/"",/13/"",/14/0,/15/0.0,/16/0.0,/17/0,/18/0.0,/19/0.0,/20/""]
 
             g = file('senbetu_log.dump', 'r')
             senbetu_parametor = pickle.load(g)
@@ -1994,16 +1837,6 @@ class MyApp(wx.App):
             pickle.dump(senbetu_parametor, f)
             f.close()
 
-#            senbetu_start_time = datetime.datetime.today()
-            # -1day とかになってしまうのを防ぐため、-senbetu_stop_timeを入れている。
-#            senbetu_stock_time = datetime.datetime.today() - senbetu_stop_time
-#            senbetu_today_qty = 0
-#            senbetu_today_weight = 0
-#            senbetu_ave_weight = 0
-#            senbetu_working_sec = 0
-#            senbetu_ave_cyecle_time = 0
-#            senbetu_ave_cyecle_cost = 0
-
         elif res == wx.ID_NO:
             pass
 
@@ -2013,6 +1846,7 @@ class MyApp(wx.App):
         global sum1
         global setting
         global weight
+        sum_c = 0
         for i in range(16):
             for i in xrange(4):
                 measure()
@@ -2029,57 +1863,49 @@ class MyApp(wx.App):
                 res = dial.ShowModal()
             rotate_moter()  # for文の下に持ってくれば、最後の位置は0になる。
 
+fig = plt.figure(figsize=(4.5, 4.1))
+G = gridspec.GridSpec(1, 20)
+ax1 = fig.add_subplot(G[0, 1:6])
+ax2 = fig.add_subplot(G[0, 9:])
+lines, = ax1.plot(
+    x_plot, setting[17] / 2, color="r", marker="o", markersize=20,)
+lines1, = ax1.plot(x_plot, y_plot, color="k",
+                   marker="o", markersize=20,)
+lines2, = ax2.plot(x_bar, final_sumweight, color="b",
+                   marker="o", markersize=20, linewidth=0)
+ax1.axis([0.9, 1.1, 0, 200])
+ax1.set_xticklabels([])
+ax1.set_title(u'個別重量')
+ax1.set_ylabel(u'重量(g)')
+ax2.axis([0, 5, 100, 300])
+ax2.set_title(u'組合せ重量')
+
 #------main------
 def KumiawaseRun():
     global i
     global table_num
     global table_weight
     global weight
-    global today_qty
-    global start_time
-#    global stock_time
-    global working_sec
-    global setting
-    global table_code
-    global today_qty, today_weight
-    global ave_weight
-    global dt
-    global ave_cyecle_time
-    global ave_cyecle_cost
-    global ave_coverweight_cost
     global final_sumweight
-    
-#    fig = plt.figure(figsize=(4.5, 4.1))
-#    G = gridspec.GridSpec(1, 20)
-#    ax1 = fig.add_subplot(G[0, 1:6])
-#    ax2 = fig.add_subplot(G[0, 9:])
-#    lines, = ax1.plot(
-#        x_plot, setting[17] / 2, color="r", marker="o", markersize=20,)
-#    lines1, = ax1.plot(x_plot, y_plot, color="k",
-#                       marker="o", markersize=20,)
-#    lines2, = ax2.plot(x_bar, final_sumweight, color="b",
-#                       marker="o", markersize=20, linewidth=0)
-#    ax1.axis([0.9, 1.1, 0, 200])
-#    ax1.set_xticklabels([])
-#    ax1.set_title(u'個別重量')
-#    ax1.set_ylabel(u'重量(g)')
-#    ax2.axis([0, 5, 100, 300])
-#    ax2.set_title(u'組合せ重量')
+    global lines1
+    global lines2
+
+    lines1.set_data(x_plot, y_plot)
+    lines2.set_data(x_bar, final_sumweight)
+    plt.draw()
+    plt.pause(.01)
     
     while True:
         kumiawase_event.wait()
         final_sumweight = [
-            final_sumweight_a, final_sumweight_b, final_sumweight_c, final_sumweight_d]
-        
+            spare_sumweight_a, spare_sumweight_b, spare_sumweight_c, spare_sumweight_d]
 
-#        table_code += 1
-#        if table_code == 16:
-#            table_code = 0  # 0に戻す
         rotate_moter()
         measure()
         print weight
         rotate()
         i += 1
+
         if i>=9:
             print "choice start"
             choice()
@@ -2088,10 +1914,9 @@ def KumiawaseRun():
             table_weight = []
             i=0
 
-#            lines1.set_data(x_plot, y_plot)
-#            lines2.set_data(x_bar, final_sumweight)
-#            plt.draw()
-#            plt.pause(.01)
+        lines1.set_data(x_plot, y_plot)
+        lines2.set_data(x_bar, final_sumweight)
+        plt.pause(.01)
 
         g = file('log.dump', 'r')
         parametor = pickle.load(g)
@@ -2135,50 +1960,20 @@ def KumiawaseRun():
 #setting[22]#作業者数(人)
     
 def SenbetuRun():
-    global senbetu_today_qty
-    global senbetu_start_time
-#    global senbetu_stock_time
-    global senbetu_working_sec
-    global senbetu_table_code
-    global senbetu_stop_trigger
-    global senbetu_today_qty, senbetu_today_weight
-    global senbetu_ave_weight
-    global senbetu_dt
-    global senbetu_ave_cyecle_time
-    global senbetu_ave_cyecle_cost
-    global senbetu_ave_coverweight_cost
-    
-#    fig = plt.figure(figsize=(4.5, 4.1))
-#    G = gridspec.GridSpec(1, 20)
-#    ax1 = fig.add_subplot(G[0, 1:6])
-#    ax2 = fig.add_subplot(G[0, 9:])
-#    lines, = ax1.plot(
-#        x_plot, setting[17] / 2, color="r", marker="o", markersize=20,)
-#    lines1, = ax1.plot(x_plot, y_plot, color="k",
-#                       marker="o", markersize=20,)
-#    lines2, = ax2.plot(x_bar, final_sumweight, color="b",
-#                       marker="o", markersize=20, linewidth=0)
-#    ax1.axis([0.9, 1.1, 0, 200])
-#    ax1.set_xticklabels([])
-#    ax1.set_title(u'個別重量')
-#    ax1.set_ylabel(u'重量(g)')
-#    ax2.axis([0, 5, 100, 300])
-#    ax2.set_title(u'組合せ重量')
+    global lines1
+    global lines2
     
     while True:
         senbetu_event.wait()
 
-#        senbetu_table_code += 1
-#        if senbetu_table_code == 16:
-#            senbetu_table_code = 0  # 0に戻す
         rotate_moter()
         measure()
         print weight
         senbetu_rotate()
 
-#        self.lines1.set_data(x_plot, y_plot)
-#        plt.draw()
-#        plt.pause(.01)
+        lines1.set_data(x_plot, y_plot)
+        lines2.set_data(x_bar, [0,0,0,0])
+        plt.pause(.01)
 
         gs = file('senbetu_log.dump', 'r')
         parametor_senbetu = pickle.load(gs)
@@ -2202,7 +1997,23 @@ def SenbetuRun():
         fs.close()
         
         time.sleep(float(setting[23] / 10)) 
-        
+    
+#setting[16]#停止(秒)
+#setting[17]平均重量(g)
+#setting[18]上限重量(g)
+#setting[19]下限重量(g)
+#setting[20]#市場価格(円/kg)
+#setting[21]#人件費(円/h)
+#setting[22]#作業者数(人)
+#senbetu_s_text 停止(秒) setting[23]
+#senbetu_s_text_S S setting[24]
+#senbetu_s_text_S S setting[25]
+#senbetu_s_text_M M setting[26]
+#senbetu_s_text_L L setting[27]
+#senbetu_s_text_2L 2L setting[28]
+#setting[29]#人件費(円/h)
+#setting[30]#作業者数(人)
+    
 #parametor [0]=self.combobox_1.GetValue()
 #parametor [1]=self.combobox_2.GetValue()
 #parametor [2]=self.combobox_3.GetValue()
@@ -2214,18 +2025,8 @@ def SenbetuRun():
 #self.TxtCtl_16.SetValue('%.1f' % parametor [8])
 #parametor [9]=self.TxtCtl_22.GetValue()           
 
-#senbetu_s_text 停止(秒) setting[23]
-#senbetu_s_text_S S setting[24]
-#senbetu_s_text_S S setting[25]
-#senbetu_s_text_M M setting[26]
-#senbetu_s_text_L L setting[27]
-#senbetu_s_text_2L 2L setting[28]
-#setting[29]#人件費(円/h)
-#setting[30]#作業者数(人)
-
-
-
 #correction()
+#補正値作成
 
 def main():
     kumiawase_thread = Thread(target=KumiawaseRun)
