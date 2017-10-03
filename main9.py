@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
 import random
-import RPi.GPIO as GPIO
-import Adafruit_PCA9685
+##import RPi.GPIO as GPIO
+##import Adafruit_PCA9685
 import time
 from itertools import combinations
 from collections import Counter
@@ -14,10 +14,10 @@ import xlwt
 import warnings
 warnings.filterwarnings('ignore')
 from threading import (Event, Thread)
-import serial #シリアル通信モジュールをインポート
+##import serial #シリアル通信モジュールをインポート
 
-#最初にやることでエラー回避
-GPIO.cleanup()
+###最初にやることでエラー回避
+##GPIO.cleanup()
 
 # 初期化(普段はコメントアウト)
 f = file('log.dump', 'w')
@@ -87,99 +87,108 @@ senbetu_event = Event()
 working_sec_sw=False
 senbetu_working_sec_sw=False
 
-GPIO.setmode(GPIO.BCM)
-# 押しボタン
-GPIO.setup(27, GPIO.IN)
-#------モーター用PWM設定------
-# Simple demo of of the PCA9685 PWM servo/LED controller library.
-# This will move channel 0 from min to max position repeatedly.
-# Author: Tony DiCola
-# License: Public Domain
-# Import the PCA9685 module.
-# Uncomment to enable debug output.
-#import logging
-# logging.basicConfig(level=logging.DEBUG)
-# Initialise the PCA9685 using the default address (0x40).
-pwm = Adafruit_PCA9685.PCA9685()
-# Alternatively specify a different address and/or bus:
-#pwm = Adafruit_PCA9685.PCA9685(address=0x41, busnum=2)
-# Configure min and max servo pulse lengths
-servo_down_0 = 300#220  # Min pulse length out of 4096
-servo_up_0 = 200  # Max pulse length out of 4096  90 deg at def=300 ##dc_min=0
-
-servo_down = 310#220  # Min pulse length out of 4096
-servo_up = 210  # Max pulse length out of 4096  90 deg at def=300 ##dc_min=0
-# Helper function to make setting a servo pulse width simpler.
+##GPIO.setmode(GPIO.BCM)
+### 押しボタン
+##GPIO.setup(27, GPIO.IN)
+### 押しボタンライト
+##GPIO.setup(22, GPIO.OUT)
+##GPIO.output(22, GPIO.LOW)
+###------モーター用PWM設定------
+### Simple demo of of the PCA9685 PWM servo/LED controller library.
+### This will move channel 0 from min to max position repeatedly.
+### Author: Tony DiCola
+### License: Public Domain
+### Import the PCA9685 module.
+### Uncomment to enable debug output.
+###import logging
+### logging.basicConfig(level=logging.DEBUG)
+### Initialise the PCA9685 using the default address (0x40).
+##pwm = Adafruit_PCA9685.PCA9685()
+### Alternatively specify a different address and/or bus:
+###pwm = Adafruit_PCA9685.PCA9685(address=0x41, busnum=2)
+### Configure min and max servo pulse lengths
+##servo_down_0 = 300#220  # Min pulse length out of 4096
+##servo_up_0 = 200  # Max pulse length out of 4096  90 deg at def=300 ##dc_min=0
+##
+##servo_down = 310#220  # Min pulse length out of 4096
+##servo_up = 210  # Max pulse length out of 4096  90 deg at def=300 ##dc_min=0
+### Helper function to make setting a servo pulse width simpler.
 
 def set_servo_pulse(channel, pulse):
-    pulse_length = 1000000    # 1,000,000 us per second
-    pulse_length //= 60       # 60 Hz
-##    print('{0}us per period'.format(pulse_length))
-    pulse_length //= 4096     # 12 bits of resolution
-##    print('{0}us per bit'.format(pulse_length))
-    pulse *= 1000
-    pulse //= pulse_length
-    pwm.set_pwm(channel, 0, pulse)
+    pass
+##    pulse_length = 1000000    # 1,000,000 us per second
+##    pulse_length //= 60       # 60 Hz
+####    print('{0}us per period'.format(pulse_length))
+##    pulse_length //= 4096     # 12 bits of resolution
+####    print('{0}us per bit'.format(pulse_length))
+##    pulse *= 1000
+##    pulse //= pulse_length
+##    pwm.set_pwm(channel, 0, pulse)
 
-# Set frequency to 60hz, good for servos.
-pwm.set_pwm_freq(60)
+#### Set frequency to 60hz, good for servos.
+##pwm.set_pwm_freq(60)
 
-# ------排出------
+### ------排出------
 def discharge_a():
+    pass
     global servo_down
-    pwm.set_pwm(0, 0, servo_down_0)
-    time.sleep(0.3)
+##    pwm.set_pwm(0, 0, servo_down_0)
+##    time.sleep(0.3)
 
 def discharge_b():
+    pass
     global servo_down
-    pwm.set_pwm(1, 0, servo_down_0)
-    time.sleep(0.3)
+##    pwm.set_pwm(1, 0, servo_down_0)
+##    time.sleep(0.3)
 
 def discharge_c():
+    pass
     global servo_down
-    pwm.set_pwm(2, 0, servo_down)
-    time.sleep(0.3)
+##    pwm.set_pwm(2, 0, servo_down)
+##    time.sleep(0.3)
 
 def discharge_d():
+    pass
     global servo_down
-    pwm.set_pwm(3, 0, servo_down)
-    time.sleep(0.3)
+##    pwm.set_pwm(3, 0, servo_down)
+##    time.sleep(0.3)
 
 
-time.sleep(2)
-pwm.set_pwm(0, 0, servo_down_0)
-time.sleep(0.3)
-pwm.set_pwm(1, 0, servo_down_0)
-time.sleep(0.3)
-pwm.set_pwm(2, 0, servo_down)
-time.sleep(0.3)
-pwm.set_pwm(3, 0, servo_down)
-time.sleep(1)
-pwm.set_pwm(0, 0, servo_up_0)
-time.sleep(0.3)
-pwm.set_pwm(1, 0, servo_up_0)
-time.sleep(0.3)
-pwm.set_pwm(2, 0, servo_up)
-time.sleep(0.3)
-pwm.set_pwm(3, 0, servo_up)
-
-## ------回転------
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(17, GPIO.IN)  # for switch
-GPIO.setup(18, GPIO.OUT, initial=0)  # for FET
-p = GPIO.PWM(18, 100)
-p.start(0)
+##time.sleep(2)
+##pwm.set_pwm(0, 0, servo_down_0)
+##time.sleep(0.3)
+##pwm.set_pwm(1, 0, servo_down_0)
+##time.sleep(0.3)
+##pwm.set_pwm(2, 0, servo_down)
+##time.sleep(0.3)
+##pwm.set_pwm(3, 0, servo_down)
+##time.sleep(1)
+##pwm.set_pwm(0, 0, servo_up_0)
+##time.sleep(0.3)
+##pwm.set_pwm(1, 0, servo_up_0)
+##time.sleep(0.3)
+##pwm.set_pwm(2, 0, servo_up)
+##time.sleep(0.3)
+##pwm.set_pwm(3, 0, servo_up)
+##
+#### ------回転------
+##GPIO.setmode(GPIO.BCM)
+##GPIO.setup(17, GPIO.IN)  # for switch
+##GPIO.setup(18, GPIO.OUT, initial=0)  # for FET
+##p = GPIO.PWM(18, 100)
+##p.start(0)
 
 def rotate_moter():
-    pwm.set_pwm(0, 0, servo_up)
-    pwm.set_pwm(1, 0, servo_up)
-    pwm.set_pwm(2, 0, servo_up)
-    pwm.set_pwm(3, 0, servo_up)
-    p.ChangeDutyCycle(20)
-    time.sleep(1)
-    GPIO.wait_for_edge(17, GPIO.RISING)
-    time.sleep(0.1)
-    p.ChangeDutyCycle(0)
+    pass
+##    pwm.set_pwm(0, 0, servo_up)
+##    pwm.set_pwm(1, 0, servo_up)
+##    pwm.set_pwm(2, 0, servo_up)
+##    pwm.set_pwm(3, 0, servo_up)
+##    p.ChangeDutyCycle(20)
+##    time.sleep(1)
+##    GPIO.wait_for_edge(17, GPIO.RISING)
+##    time.sleep(0.1)
+##    p.ChangeDutyCycle(0)
 
 #------組合せ------
 sum_table_weight = []
@@ -612,87 +621,90 @@ a2=0.0
 a3=0.0
 def measure(setting_23,setting_setting_31):#setting[23]は測定時間、setting_setting[31]はweight of table
     global weight
-    global a2
-    global a3
-#    weight=random.uniform(1,100)
-#    pass
-    times = int(7+setting_23/10*100/20 )#一回の測定が0.2sec程度。あと整数になるように回りくどく計算している
-    for i in xrange(times):
-        try:
-            con=serial.Serial('/dev/ttyUSB0', 9600, timeout=0.6)#'S\xd4\xac-00000\xb1.\xb1\xa0\xa0\xe7\x00\x8d\n', 'S\xd4\xac-00\n'
-            a=con.readlines(20)
-        ##    print a
-            con.close()
-            val=[]
-            a0=a[-1]
-            a1=a0.replace('\xa0\xa0\xe7\x8d\n', '')
-            a21=a1.replace('S\xd4\xac', '')
-            a2=a21.replace('US\xac', '')
-            if a2[-1].isdigit() ==False:#http://qiita.com/Arvelt/items/07c88411553fc0488ed8
-                a2=a2.replace(a2[-1],chr(ord(a2[-1])-0x80))#なぜか0x80分大きな値になっていたので、それを修正している。ordで10→16進数に、chorで16→10進数にしている
-        ##    if a2[-2].isdigit() ==False:
-        ##        a2=a2.replace(a2[-2],chr(ord(a2[-2])-0x80))
-            if a2[-3].isdigit() ==False: 
-                a2=a2.replace(a2[-3],chr(ord(a2[-3])-0x80))#8
-            if a2[-4].isdigit() ==False: 
-                a2=a2.replace(a2[-4],chr(ord(a2[-4])-0x80))#8
-            if a2[-5].isdigit() ==False: 
-                a2=a2.replace(a2[-5],chr(ord(a2[-5])-0x80))#8
-            if a2[-6].isdigit() ==False: 
-                a2=a2.replace(a2[-6],chr(ord(a2[-6])-0x80))#8
-            if a2[-7].isdigit() ==False: 
-                a2=a2.replace(a2[-7],chr(ord(a2[-7])-0x80))#8
-            if a2[-8].isdigit() ==False: 
-                a2=a2.replace(a2[-8],chr(ord(a2[-8])-0x80))#8 
-        ##    if a2.find('.')==-1:#こうしてあげないと08とかの値を8進数と勘違いする
-        ##        a3=a2+'.0    
-##            weight=float(a2)#重量小さいはかりのためにfloatにしておく 
-            a3 = float(a2) - setting_setting_31
-        except:
-            pass
-    print "a2"
-    print a2
-    weight=a3
+    weight=random.uniform(1,100)    
+    pass
+##    global a2
+##    global a3
+###    weight=random.uniform(1,100)
+###    pass
+##    times = int(7+setting_23*100/20 )#一回の測定が0.2sec程度。あと整数になるように回りくどく計算している
+##    for i in xrange(times):
+##        try:
+##            con=serial.Serial('/dev/ttyUSB0', 9600, timeout=0.6)#'S\xd4\xac-00000\xb1.\xb1\xa0\xa0\xe7\x00\x8d\n', 'S\xd4\xac-00\n'
+##            a=con.readlines(20)
+##        ##    print a
+##            con.close()
+##            val=[]
+##            a0=a[-1]
+##            a1=a0.replace('\xa0\xa0\xe7\x8d\n', '')
+##            a21=a1.replace('S\xd4\xac', '')
+##            a2=a21.replace('US\xac', '')
+##            if a2[-1].isdigit() ==False:#http://qiita.com/Arvelt/items/07c88411553fc0488ed8
+##                a2=a2.replace(a2[-1],chr(ord(a2[-1])-0x80))#なぜか0x80分大きな値になっていたので、それを修正している。ordで10→16進数に、chorで16→10進数にしている
+##        ##    if a2[-2].isdigit() ==False:
+##        ##        a2=a2.replace(a2[-2],chr(ord(a2[-2])-0x80))
+##            if a2[-3].isdigit() ==False: 
+##                a2=a2.replace(a2[-3],chr(ord(a2[-3])-0x80))#8
+##            if a2[-4].isdigit() ==False: 
+##                a2=a2.replace(a2[-4],chr(ord(a2[-4])-0x80))#8
+##            if a2[-5].isdigit() ==False: 
+##                a2=a2.replace(a2[-5],chr(ord(a2[-5])-0x80))#8
+##            if a2[-6].isdigit() ==False: 
+##                a2=a2.replace(a2[-6],chr(ord(a2[-6])-0x80))#8
+##            if a2[-7].isdigit() ==False: 
+##                a2=a2.replace(a2[-7],chr(ord(a2[-7])-0x80))#8
+##            if a2[-8].isdigit() ==False: 
+##                a2=a2.replace(a2[-8],chr(ord(a2[-8])-0x80))#8 
+##        ##    if a2.find('.')==-1:#こうしてあげないと08とかの値を8進数と勘違いする
+##        ##        a3=a2+'.0    
+####            weight=float(a2)#重量小さいはかりのためにfloatにしておく 
+##            a3 = float(a2) - setting_setting_31
+##        except:
+##            pass
+##    print "a2"
+##    print a2
+##    weight=a3
 
 def correction():#各テーブル重量の個体差分の補正を行う。
     global weight
     global a3
-    con=serial.Serial('/dev/ttyUSB0', 1200, timeout=0.2)
-    gcal = file('set.dump', 'r')
-    setting = pickle.load(gcal)
-    gcal.close()
-    for i in xrange(16):
-        times = 5 #一回の測定が0.2sec程度。あと整数になるように回りくどく計算している
-        val=[]
-        for i in xrange(times):
-            try:
-                a=con.readlines(20)
-                con.close()
-                a0=a[-1]
-                a1=a0.replace('\xa0\xa0\xe7\x8d\n', '')
-                a2=a1.replace('S\xd4\xac', '')
-                if a2[-1].isdigit() ==False:#http://qiita.com/Arvelt/items/07c88411553fc0488ed8
-                    a2=a2.replace(a2[-1],chr(ord(a2[-1])-0x80))#なぜか0x80分大きな値になっていたので、それを修正している。ordで10→16進数に、chorで16→10進数にしている
-                if a2[-2].isdigit() ==False:
-                    a2=a2.replace(a2[-2],chr(ord(a2[-2])-0x80))
-                if a2[-3].isdigit() ==False: 
-                    a2=a2.replace(a2[-3],chr(ord(a2[-3])-0x80))
-                if a2.find('.')==-1:#こうしてあげないと08とかの値を8進数と勘違いする
-                    a3=a2+'.0'
-                val.append(float(a3))#重量小さいはかりのためにfloatにしておく
-            except:
-                pass
-        weight = 1.0*sum(val)/len(val)
-        setting[setting[31]]=weight
-        rotate_moter()
-        setting[31]+=1
-        if setting[31]==16:
-            setting[31]=0
-        print weight
-    print setting
-    fcal = file('set.dump', 'w')
-    pickle.dump(setting, fcal)
-    fcal.close()
+    pass
+##    con=serial.Serial('/dev/ttyUSB0', 1200, timeout=0.2)
+##    gcal = file('set.dump', 'r')
+##    setting = pickle.load(gcal)
+##    gcal.close()
+##    for i in xrange(16):
+##        times = 5 #一回の測定が0.2sec程度。あと整数になるように回りくどく計算している
+##        val=[]
+##        for i in xrange(times):
+##            try:
+##                a=con.readlines(20)
+##                con.close()
+##                a0=a[-1]
+##                a1=a0.replace('\xa0\xa0\xe7\x8d\n', '')
+##                a2=a1.replace('S\xd4\xac', '')
+##                if a2[-1].isdigit() ==False:#http://qiita.com/Arvelt/items/07c88411553fc0488ed8
+##                    a2=a2.replace(a2[-1],chr(ord(a2[-1])-0x80))#なぜか0x80分大きな値になっていたので、それを修正している。ordで10→16進数に、chorで16→10進数にしている
+##                if a2[-2].isdigit() ==False:
+##                    a2=a2.replace(a2[-2],chr(ord(a2[-2])-0x80))
+##                if a2[-3].isdigit() ==False: 
+##                    a2=a2.replace(a2[-3],chr(ord(a2[-3])-0x80))
+##                if a2.find('.')==-1:#こうしてあげないと08とかの値を8進数と勘違いする
+##                    a3=a2+'.0'
+##                val.append(float(a3))#重量小さいはかりのためにfloatにしておく
+##            except:
+##                pass
+##        weight = 1.0*sum(val)/len(val)
+##        setting[setting[31]]=weight
+##        rotate_moter()
+##        setting[31]+=1
+##        if setting[31]==16:
+##            setting[31]=0
+##        print weight
+##    print setting
+##    fcal = file('set.dump', 'w')
+##    pickle.dump(setting, fcal)
+##    fcal.close()
 
 #------回転------
 def senbetu_rotate():
@@ -792,8 +804,6 @@ def rotate():
     discharge_list_d = [x - 1 for x in discharge_list_d]
     discharge_i -= 1
 
-    
-
     # print(discharge_i)
     # 先頭が0だったらdischarge
     if len(discharge_list_a) > 0:
@@ -826,6 +836,8 @@ def rotate():
 
     # リストがなくなったらstop、袋詰後スイッチを押してstart
     if discharge_i == 0:
+        if not discharge_list_a==[] and discharge_list_b==[] and discharge_list_c==[] and discharge_list_d==[]:
+            print "leftover discharge"
         # if discharge_list_a==[] and discharge_list_b==[] and discharge_list_c==[] and discharge_list_d==[]:
         discharge_list_a = spare_num_a
         discharge_list_b = spare_num_b
@@ -834,8 +846,10 @@ def rotate():
         discharge_i = spare_i
         numbering = 0
 #        print 'stop'
-        #switch on になるまでストップしている
-        GPIO.wait_for_edge(27, GPIO.RISING)#それか　GPIO.wait_for_edge(5, GPIO.FALLING)
+##        #switch on になるまでストップしている
+##        GPIO.output(22, GPIO.HIGH)#ライト点灯
+##        GPIO.wait_for_edge(27, GPIO.RISING)
+##        GPIO.output(22, GPIO.LOW)
 
 
 
@@ -843,7 +857,6 @@ class MyApp(wx.App):
     def OnInit(self):
         def spin_value_change(event):#停止(秒)
             obj = event.GetEventObject()
-            self.TxtCtl_23.SetValue(str(obj.GetValue() / 10))
             f = file('set.dump', 'w')
             setting[16] = obj.GetValue()
             pickle.dump(setting, f)
@@ -851,7 +864,6 @@ class MyApp(wx.App):
 
         def spin_value_change_1(event):#平均重量(g)
             obj = event.GetEventObject()
-            self.TxtCtl_24.SetValue(str(obj.GetValue()))
             f = file('set.dump', 'w')
             setting[17] = obj.GetValue()
             pickle.dump(setting, f)
@@ -859,7 +871,6 @@ class MyApp(wx.App):
 
         def spin_value_change_2(event):#上限重量(g)
             obj = event.GetEventObject()
-            self.TxtCtl_25.SetValue(str(obj.GetValue()))
             f = file('set.dump', 'w')
             setting[18] = obj.GetValue()
             pickle.dump(setting, f)
@@ -867,7 +878,6 @@ class MyApp(wx.App):
 
         def spin_value_change_3(event):#下限重量(g)
             obj = event.GetEventObject()
-            self.TxtCtl_26.SetValue(str(obj.GetValue()))
             f = file('set.dump', 'w')
             setting[19] = obj.GetValue()
             pickle.dump(setting, f)
@@ -875,7 +885,6 @@ class MyApp(wx.App):
 
         def spin_value_change_4(event):#市場価格(円/kg)
             obj = event.GetEventObject()
-            self.TxtCtl_28.SetValue(str(obj.GetValue()))
             f = file('set.dump', 'w')
             setting[20] = obj.GetValue()
             pickle.dump(setting, f)
@@ -883,7 +892,6 @@ class MyApp(wx.App):
 
         def spin_value_change_5(event):#人件費(円)
             obj = event.GetEventObject()
-            self.TxtCtl_30.SetValue(str(obj.GetValue()))
             f = file('set.dump', 'w')
             setting[21] = obj.GetValue()
             pickle.dump(setting, f)
@@ -891,7 +899,6 @@ class MyApp(wx.App):
 
         def spin_value_change_6(event):#作業者数(人)
             obj = event.GetEventObject()
-            self.TxtCtl_32.SetValue(str(obj.GetValue()))
             f = file('set.dump', 'w')
             setting[22] = obj.GetValue()
             pickle.dump(setting, f)
@@ -930,43 +937,36 @@ class MyApp(wx.App):
         # 設定欄のスピンボタン
         g = file('set.dump', 'r')
         setting = pickle.load(g)
-        self.spinbutton_1 = wx.SpinButton(
-            self.panel_kumiawase, wx.ID_ANY, size=(90, 30), style=wx.SP_VERTICAL)#linuxだとhorizontalでやるとspinctrlの表示になってしまうようだ
-        self.spinbutton_1.SetMin(4)
-        self.spinbutton_1.SetMax(600)
+        self.spinbutton_1 =wx.SpinCtrlDouble(self.panel_kumiawase, id=-1, size=(120, 30), style=wx.SP_ARROW_KEYS, inc=0.1)
+        self.spinbutton_1.SetMin(0.4)
+        self.spinbutton_1.SetMax(60)
         self.spinbutton_1.SetValue(setting[16])
         self.spinbutton_1.Bind(wx.EVT_SPIN, spin_value_change)
-        self.spinbutton_2 = wx.SpinButton(
-            self.panel_kumiawase, wx.ID_ANY, size=(90, 30), style=wx.SP_HORIZONTAL)
+        self.spinbutton_2 =wx.SpinCtrlDouble(self.panel_kumiawase, id=-1, size=(120, 30), style=wx.SP_ARROW_KEYS, inc=1)
         self.spinbutton_2.SetRange(0,999)
         self.spinbutton_2.SetValue(setting[17])
         self.spinbutton_2.Bind(wx.EVT_SPIN, spin_value_change_1)
-        self.spinbutton_3 = wx.SpinButton(
-            self.panel_kumiawase, wx.ID_ANY, size=(90, 30), style=wx.SP_HORIZONTAL)
+        self.spinbutton_3 =wx.SpinCtrlDouble(self.panel_kumiawase, id=-1, size=(120, 30), style=wx.SP_ARROW_KEYS, inc=1)
         self.spinbutton_3.SetMin(0)
         self.spinbutton_3.SetMax(1000)
         self.spinbutton_3.SetValue(setting[18])
         self.spinbutton_3.Bind(wx.EVT_SPIN, spin_value_change_2)
-        self.spinbutton_4 = wx.SpinButton(
-            self.panel_kumiawase, wx.ID_ANY, size=(90, 30), style=wx.SP_HORIZONTAL)
+        self.spinbutton_4 =wx.SpinCtrlDouble(self.panel_kumiawase, id=-1, size=(120, 30), style=wx.SP_ARROW_KEYS, inc=1)
         self.spinbutton_4.SetMin(0)
         self.spinbutton_4.SetMax(1000)
         self.spinbutton_4.SetValue(setting[19])
         self.spinbutton_4.Bind(wx.EVT_SPIN, spin_value_change_3)
-        self.spinbutton_5 = wx.SpinButton(
-            self.panel_kumiawase, wx.ID_ANY, size=(90, 30), style=wx.SP_HORIZONTAL)
+        self.spinbutton_5 =wx.SpinCtrlDouble(self.panel_kumiawase, id=-1, size=(120, 30), style=wx.SP_ARROW_KEYS, inc=1)
         self.spinbutton_5.SetMin(0)
         self.spinbutton_5.SetMax(1000)
         self.spinbutton_5.SetValue(setting[20])
         self.spinbutton_5.Bind(wx.EVT_SPIN, spin_value_change_4)
-        self.spinbutton_6 = wx.SpinButton(
-            self.panel_kumiawase, wx.ID_ANY, size=(90, 30), style=wx.SP_HORIZONTAL)
+        self.spinbutton_6 =wx.SpinCtrlDouble(self.panel_kumiawase, id=-1, size=(120, 30), style=wx.SP_ARROW_KEYS, inc=1)
         self.spinbutton_6.SetMin(0)
         self.spinbutton_6.SetMax(1000)
         self.spinbutton_6.SetValue(setting[21])
         self.spinbutton_6.Bind(wx.EVT_SPIN, spin_value_change_5)
-        self.spinbutton_7 = wx.SpinButton(
-            self.panel_kumiawase, wx.ID_ANY, size=(90, 30), style=wx.SP_HORIZONTAL)
+        self.spinbutton_7 =wx.SpinCtrlDouble(self.panel_kumiawase, id=-1, size=(120, 30), style=wx.SP_ARROW_KEYS, inc=0.1)
         self.spinbutton_7.SetMin(0)
         self.spinbutton_7.SetMax(1000)
         self.spinbutton_7.SetValue(setting[22])
@@ -1018,16 +1018,10 @@ class MyApp(wx.App):
             self.panel_kumiawase, -1, u"", size=(150, -1), style=wx.TE_LEFT)
         self.s_text_27 = wx.StaticText(
             self.panel_kumiawase, wx.ID_ANY, u"市場価格(円/kg)")
-        self.TxtCtl_28 = wx.TextCtrl(
-            self.panel_kumiawase, -1, str(setting[20]), size=(90, -1), style=wx.TE_LEFT)
         self.s_text_29 = wx.StaticText(
             self.panel_kumiawase, wx.ID_ANY, u"人件費(円/h)")
-        self.TxtCtl_30 = wx.TextCtrl(
-            self.panel_kumiawase, -1, str(setting[21]), size=(90, -1), style=wx.TE_LEFT)
         self.s_text_31 = wx.StaticText(
             self.panel_kumiawase, wx.ID_ANY, u"作業者数(人)")
-        self.TxtCtl_32 = wx.TextCtrl(
-            self.panel_kumiawase, -1, str(setting[22]), size=(90, -1), style=wx.TE_LEFT)
         self.s_text_33 = wx.StaticText(
             self.panel_kumiawase, wx.ID_ANY, u"日時")
         self.TxtCtl_34 = wx.TextCtrl(
@@ -1067,14 +1061,6 @@ class MyApp(wx.App):
         self.Btn23 = wx.Button(self.panel_kumiawase, -1,
                                u"ゼロ点補正", size=(300, 30))
         self.Btn23.Bind(wx.EVT_BUTTON, self.ZeroPointCorrection)
-        self.TxtCtl_23 = wx.TextCtrl(
-            self.panel_kumiawase, -1, str(float(setting[16] / 10)), size=(90, -1), style=wx.TE_LEFT)
-        self.TxtCtl_24 = wx.TextCtrl(
-            self.panel_kumiawase, -1, str(setting[17]), size=(90, -1), style=wx.TE_LEFT)
-        self.TxtCtl_25 = wx.TextCtrl(
-            self.panel_kumiawase, -1, str(setting[18]), size=(90, -1), style=wx.TE_LEFT)
-        self.TxtCtl_26 = wx.TextCtrl(
-            self.panel_kumiawase, -1, str(setting[19]), size=(90, -1), style=wx.TE_LEFT)
         self.s_text_white_6 = wx.StaticText(
             self.panel_kumiawase, wx.ID_ANY, "")
 
@@ -1112,16 +1098,17 @@ class MyApp(wx.App):
         self.s_text_2.SetFont(self.font)
         self.s_text_3.SetFont(self.font)
         self.s_text_4.SetFont(self.font)
-        self.TxtCtl_23.SetFont(self.font)
-        self.TxtCtl_24.SetFont(self.font)
-        self.TxtCtl_25.SetFont(self.font)
-        self.TxtCtl_26.SetFont(self.font)
+        
+        self.spinbutton_1.SetFont(self.font)
+        self.spinbutton_2.SetFont(self.font)
+        self.spinbutton_3.SetFont(self.font)
+        self.spinbutton_4.SetFont(self.font)
+        self.spinbutton_5.SetFont(self.font)
+        self.spinbutton_6.SetFont(self.font)
+        self.spinbutton_7.SetFont(self.font)
         self.s_text_27.SetFont(self.font)
-        self.TxtCtl_28.SetFont(self.font)
         self.s_text_29.SetFont(self.font)
-        self.TxtCtl_30.SetFont(self.font)
         self.s_text_31.SetFont(self.font)
-        self.TxtCtl_32.SetFont(self.font)
         self.s_text_33.SetFont(self.font)
         self.TxtCtl_34.SetFont(self.font_1)
         self.s_text_35.SetFont(self.font_2)
@@ -1138,27 +1125,20 @@ class MyApp(wx.App):
 
         # レイアウト
         self.layout_1 = wx.BoxSizer(wx.VERTICAL)
-        self.layout_1_2 = wx.GridSizer(7, 3, 5, 5)
+        self.layout_1_2 = wx.GridSizer(7, 2, 5, 5)
         self.layout_1_2.Add(self.s_text_2)
-        self.layout_1_2.Add(self.TxtCtl_24)
         self.layout_1_2.Add(self.spinbutton_2)
         self.layout_1_2.Add(self.s_text_3)
-        self.layout_1_2.Add(self.TxtCtl_25)
         self.layout_1_2.Add(self.spinbutton_3)
         self.layout_1_2.Add(self.s_text_4)
-        self.layout_1_2.Add(self.TxtCtl_26)
         self.layout_1_2.Add(self.spinbutton_4)
         self.layout_1_2.Add(self.s_text_1)
-        self.layout_1_2.Add(self.TxtCtl_23)
         self.layout_1_2.Add(self.spinbutton_1)
         self.layout_1_2.Add(self.s_text_27)
-        self.layout_1_2.Add(self.TxtCtl_28)
         self.layout_1_2.Add(self.spinbutton_5)
         self.layout_1_2.Add(self.s_text_29)
-        self.layout_1_2.Add(self.TxtCtl_30)
         self.layout_1_2.Add(self.spinbutton_6)
         self.layout_1_2.Add(self.s_text_31)
-        self.layout_1_2.Add(self.TxtCtl_32)
         self.layout_1_2.Add(self.spinbutton_7)
         self.layout_1.Add(self.layout_1_2)
         
@@ -1205,11 +1185,11 @@ class MyApp(wx.App):
         self.layout_3.Add(self.layout_3_2)
         self.layout_1_2_3 = wx.BoxSizer(wx.HORIZONTAL)
         self.layout_1_2_3.Add(
-            self.layout_2, 0, flag=wx.EXPAND | wx.ALL,   border=10)
+            self.layout_2, 0, flag=wx.EXPAND | wx.ALL,   border=30)
         self.layout_1_2_3.Add(
-            self.layout_1, 0, flag=wx.EXPAND | wx.ALL,   border=10)
+            self.layout_1, 0, flag=wx.EXPAND | wx.ALL,   border=30)
         self.layout_1_2_3.Add(
-            self.layout_3, 1, flag=wx.EXPAND | wx.ALL,   border=10)
+            self.layout_3, 1, flag=wx.EXPAND | wx.ALL,   border=30)
         self.panel_kumiawase.SetSizer(self.layout_1_2_3)
 
 #################################################################################
@@ -1217,7 +1197,6 @@ class MyApp(wx.App):
         # 設定欄のテキスト
         def spin_value_change_senbetu(event):
             obj = event.GetEventObject()
-            self.senbetu_TxtCtl.SetValue(str(obj.GetValue() / 10))
             f = file('set.dump', 'w')
             setting[23] = obj.GetValue()
             pickle.dump(setting, f)
@@ -1225,7 +1204,6 @@ class MyApp(wx.App):
 
         def spin_value_change_senbetu_1(event):
             obj = event.GetEventObject()
-            self.senbetu_TxtCtl_23.SetValue(str(obj.GetValue()))
             f = file('set.dump', 'w')
             setting[24] = obj.GetValue()
             pickle.dump(setting, f)
@@ -1233,7 +1211,6 @@ class MyApp(wx.App):
 
         def spin_value_change_senbetu_2(event):
             obj = event.GetEventObject()
-            self.senbetu_TxtCtl_24.SetValue(str(obj.GetValue()))
             f = file('set.dump', 'w')
             setting[25] = obj.GetValue()
             pickle.dump(setting, f)
@@ -1241,7 +1218,6 @@ class MyApp(wx.App):
 
         def spin_value_change_senbetu_3(event):
             obj = event.GetEventObject()
-            self.senbetu_TxtCtl_25.SetValue(str(obj.GetValue()))
             f = file('set.dump', 'w')
             setting[26] = obj.GetValue()
             pickle.dump(setting, f)
@@ -1249,7 +1225,6 @@ class MyApp(wx.App):
 
         def spin_value_change_senbetu_4(event):
             obj = event.GetEventObject()
-            self.senbetu_TxtCtl_26.SetValue(str(obj.GetValue()))
             f = file('set.dump', 'w')
             setting[27] = obj.GetValue()
             pickle.dump(setting, f)
@@ -1257,7 +1232,6 @@ class MyApp(wx.App):
 
         def spin_value_change_senbetu_5(event):
             obj = event.GetEventObject()
-            self.senbetu_TxtCtl_27.SetValue(str(obj.GetValue()))
             f = file('set.dump', 'w')
             setting[28] = obj.GetValue()
             pickle.dump(setting, f)
@@ -1265,7 +1239,6 @@ class MyApp(wx.App):
 
         def spin_value_change_senbetu_6(event):#人件費(円/h)
             obj = event.GetEventObject()
-            self.senbetu_TxtCtl_28.SetValue(str(obj.GetValue()))
             f = file('set.dump', 'w')
             setting[29] = obj.GetValue()
             pickle.dump(setting, f)
@@ -1273,7 +1246,6 @@ class MyApp(wx.App):
 
         def spin_value_change_senbetu_7(event):#作業者数(人)
             obj = event.GetEventObject()
-            self.senbetu_TxtCtl_30.SetValue(str(obj.GetValue()))
             f = file('set.dump', 'w')
             setting[30] = obj.GetValue()
             pickle.dump(setting, f)
@@ -1296,56 +1268,48 @@ class MyApp(wx.App):
         # 設定欄のスピンボタン
         g = file('set.dump', 'r')
         setting = pickle.load(g)
-        self.senbetu_spinbutton = wx.SpinButton(
-            self.panel_senbetu, wx.ID_ANY, size=(90, 30), style=wx.SP_HORIZONTAL)
-        self.senbetu_spinbutton.SetMin(4)
-        self.senbetu_spinbutton.SetMax(300)
+        self.senbetu_spinbutton = wx.SpinCtrlDouble(self.panel_senbetu, id=-1, size=(120, 30), style=wx.SP_ARROW_KEYS, inc=0.1)
+        self.senbetu_spinbutton.SetMin(0.4)
+        self.senbetu_spinbutton.SetMax(30)
         self.senbetu_spinbutton.SetValue(setting[23])
         self.senbetu_spinbutton.Bind(wx.EVT_SPIN, spin_value_change_senbetu)
-        self.senbetu_spinbutton_1 = wx.SpinButton(
-            self.panel_senbetu, wx.ID_ANY, size=(90, 30), style=wx.SP_HORIZONTAL)
+        self.senbetu_spinbutton_1 = wx.SpinCtrlDouble(self.panel_senbetu, id=-1, size=(120, 30), style=wx.SP_ARROW_KEYS, inc=1)
         self.senbetu_spinbutton_1.SetMin(0)
         self.senbetu_spinbutton_1.SetMax(1000)
         self.senbetu_spinbutton_1.SetValue(setting[24])
         self.senbetu_spinbutton_1.Bind(
             wx.EVT_SPIN, spin_value_change_senbetu_1)
-        self.senbetu_spinbutton_2 = wx.SpinButton(
-            self.panel_senbetu, wx.ID_ANY, size=(90, 30), style=wx.SP_HORIZONTAL)
+        self.senbetu_spinbutton_2 = wx.SpinCtrlDouble(self.panel_senbetu, id=-1, size=(120, 30), style=wx.SP_ARROW_KEYS, inc=1)
         self.senbetu_spinbutton_2.SetMin(0)
         self.senbetu_spinbutton_2.SetMax(1000)
         self.senbetu_spinbutton_2.SetValue(setting[25])
         self.senbetu_spinbutton_2.Bind(
             wx.EVT_SPIN, spin_value_change_senbetu_2)
-        self.senbetu_spinbutton_3 = wx.SpinButton(
-            self.panel_senbetu, wx.ID_ANY, size=(90, 30), style=wx.SP_HORIZONTAL)
+        self.senbetu_spinbutton_3 = wx.SpinCtrlDouble(self.panel_senbetu, id=-1, size=(120, 30), style=wx.SP_ARROW_KEYS, inc=1)
         self.senbetu_spinbutton_3.SetMin(0)
         self.senbetu_spinbutton_3.SetMax(1000)
         self.senbetu_spinbutton_3.SetValue(setting[26])
         self.senbetu_spinbutton_3.Bind(
             wx.EVT_SPIN, spin_value_change_senbetu_3)
-        self.senbetu_spinbutton_4 = wx.SpinButton(
-            self.panel_senbetu, wx.ID_ANY, size=(90, 30), style=wx.SP_HORIZONTAL)
+        self.senbetu_spinbutton_4 = wx.SpinCtrlDouble(self.panel_senbetu, id=-1, size=(120, 30), style=wx.SP_ARROW_KEYS, inc=1)
         self.senbetu_spinbutton_4.SetMin(0)
         self.senbetu_spinbutton_4.SetMax(1000)
         self.senbetu_spinbutton_4.SetValue(setting[27])
         self.senbetu_spinbutton_4.Bind(
             wx.EVT_SPIN, spin_value_change_senbetu_4)
-        self.senbetu_spinbutton_5 = wx.SpinButton(
-            self.panel_senbetu, wx.ID_ANY, size=(90, 30), style=wx.SP_HORIZONTAL)
+        self.senbetu_spinbutton_5 = wx.SpinCtrlDouble(self.panel_senbetu, id=-1, size=(120, 30), style=wx.SP_ARROW_KEYS, inc=1)
         self.senbetu_spinbutton_5.SetMin(0)
         self.senbetu_spinbutton_5.SetMax(1000)
         self.senbetu_spinbutton_5.SetValue(setting[28])
         self.senbetu_spinbutton_5.Bind(
             wx.EVT_SPIN, spin_value_change_senbetu_5)
-        self.senbetu_spinbutton_6 = wx.SpinButton(
-            self.panel_senbetu, wx.ID_ANY, size=(90, 30), style=wx.SP_HORIZONTAL)
+        self.senbetu_spinbutton_6 = wx.SpinCtrlDouble(self.panel_senbetu, id=-1, size=(120, 30), style=wx.SP_ARROW_KEYS, inc=1)
         self.senbetu_spinbutton_6.SetMin(0)
         self.senbetu_spinbutton_6.SetMax(1000)
         self.senbetu_spinbutton_6.SetValue(setting[29])
         self.senbetu_spinbutton_6.Bind(
             wx.EVT_SPIN, spin_value_change_senbetu_6)
-        self.senbetu_spinbutton_7 = wx.SpinButton(
-            self.panel_senbetu, wx.ID_ANY, size=(90, 30), style=wx.SP_HORIZONTAL)
+        self.senbetu_spinbutton_7 = wx.SpinCtrlDouble(self.panel_senbetu, id=-1, size=(120, 30), style=wx.SP_ARROW_KEYS, inc=0.1)
         self.senbetu_spinbutton_7.SetMin(0)
         self.senbetu_spinbutton_7.SetMax(1000)
         self.senbetu_spinbutton_7.SetValue(setting[30])
@@ -1396,12 +1360,8 @@ class MyApp(wx.App):
             self.panel_senbetu, -1, u"", size=(150, -1), style=wx.TE_LEFT)
         self.senbetu_s_text_27 = wx.StaticText(
             self.panel_senbetu, wx.ID_ANY, u"人件費(円)")
-        self.senbetu_TxtCtl_28 = wx.TextCtrl(
-            self.panel_senbetu, -1, str(setting[29]), size=(90, -1), style=wx.TE_LEFT)
         self.senbetu_s_text_29 = wx.StaticText(
             self.panel_senbetu, wx.ID_ANY, u"作業者数(人)")
-        self.senbetu_TxtCtl_30 = wx.TextCtrl(
-            self.panel_senbetu, -1, str(setting[30]), size=(90, -1), style=wx.TE_LEFT)
         self.senbetu_s_text_33 = wx.StaticText(
             self.panel_senbetu, wx.ID_ANY, u"日時")
         self.senbetu_TxtCtl_34 = wx.TextCtrl(
@@ -1420,18 +1380,6 @@ class MyApp(wx.App):
             self.panel_senbetu, -1, u"ゼロ点補正", size=(300, 30))
         self.senbetu_Btn23.Bind(wx.EVT_BUTTON, self.ZeroPointCorrection)
 
-        self.senbetu_TxtCtl = wx.TextCtrl(
-            self.panel_senbetu, -1, str(float(setting[23] / 10)), size=(90, -1), style=wx.TE_LEFT)
-        self.senbetu_TxtCtl_23 = wx.TextCtrl(
-            self.panel_senbetu, -1, str(setting[24]), size=(90, -1), style=wx.TE_LEFT)
-        self.senbetu_TxtCtl_24 = wx.TextCtrl(
-            self.panel_senbetu, -1, str(setting[25]), size=(90, -1), style=wx.TE_LEFT)
-        self.senbetu_TxtCtl_25 = wx.TextCtrl(
-            self.panel_senbetu, -1, str(setting[26]), size=(90, -1), style=wx.TE_LEFT)
-        self.senbetu_TxtCtl_26 = wx.TextCtrl(
-            self.panel_senbetu, -1, str(setting[27]), size=(90, -1), style=wx.TE_LEFT)
-        self.senbetu_TxtCtl_27 = wx.TextCtrl(
-            self.panel_senbetu, -1, str(setting[28]), size=(90, -1), style=wx.TE_LEFT)
         self.senbetu_s_text_white_6 = wx.StaticText(
             self.panel_senbetu, wx.ID_ANY, "")
         self.senbetu_s_text_white_7 = wx.StaticText(
@@ -1464,17 +1412,17 @@ class MyApp(wx.App):
         self.senbetu_s_text_M.SetFont(self.font)
         self.senbetu_s_text_L.SetFont(self.font)
         self.senbetu_s_text_2L.SetFont(self.font)
-        self.senbetu_TxtCtl_23.SetFont(self.font)
-        self.senbetu_TxtCtl_24.SetFont(self.font)
-        self.senbetu_TxtCtl_25.SetFont(self.font)
-        self.senbetu_TxtCtl_26.SetFont(self.font)
-        self.senbetu_TxtCtl_27.SetFont(self.font)
+        self.senbetu_spinbutton.SetFont(self.font)
+        self.senbetu_spinbutton_1.SetFont(self.font)
+        self.senbetu_spinbutton_2.SetFont(self.font)
+        self.senbetu_spinbutton_3.SetFont(self.font)
+        self.senbetu_spinbutton_4.SetFont(self.font)
+        self.senbetu_spinbutton_5.SetFont(self.font)
+        self.senbetu_spinbutton_6.SetFont(self.font)
+        self.senbetu_spinbutton_7.SetFont(self.font)
         self.senbetu_s_text_27.SetFont(self.font)
-        self.senbetu_TxtCtl_28.SetFont(self.font)
         self.senbetu_s_text_29.SetFont(self.font)
-        self.senbetu_TxtCtl_30.SetFont(self.font)
         self.senbetu_s_text.SetFont(self.font)
-        self.senbetu_TxtCtl.SetFont(self.font)
         self.senbetu_s_text_33.SetFont(self.font)
         self.senbetu_TxtCtl_34.SetFont(self.font_1)
         self.senbetu_s_text_35.SetFont(self.font_2)
@@ -1482,33 +1430,24 @@ class MyApp(wx.App):
 
         # レイアウト
         self.senbetu_layout_1 = wx.BoxSizer(wx.VERTICAL)
-        self.senbetu_layout_1_2 = wx.GridSizer(9, 3, 5, 5)
+        self.senbetu_layout_1_2 = wx.GridSizer(9, 2, 5, 5)
         self.senbetu_layout_1_2.Add(self.senbetu_s_text_0)
         self.senbetu_layout_1_2.Add(self.senbetu_s_text_1)
         self.senbetu_layout_1_2.Add(self.senbetu_s_text_white_7)
-        self.senbetu_layout_1_2.Add(self.senbetu_s_text_white_8)
-        self.senbetu_layout_1_2.Add(self.senbetu_TxtCtl_23)
         self.senbetu_layout_1_2.Add(self.senbetu_spinbutton_1)
         self.senbetu_layout_1_2.Add(self.senbetu_s_text_S)
-        self.senbetu_layout_1_2.Add(self.senbetu_TxtCtl_24)
         self.senbetu_layout_1_2.Add(self.senbetu_spinbutton_2)
         self.senbetu_layout_1_2.Add(self.senbetu_s_text_M)
-        self.senbetu_layout_1_2.Add(self.senbetu_TxtCtl_25)
         self.senbetu_layout_1_2.Add(self.senbetu_spinbutton_3)
         self.senbetu_layout_1_2.Add(self.senbetu_s_text_L)
-        self.senbetu_layout_1_2.Add(self.senbetu_TxtCtl_26)
         self.senbetu_layout_1_2.Add(self.senbetu_spinbutton_4)
         self.senbetu_layout_1_2.Add(self.senbetu_s_text_2L)
-        self.senbetu_layout_1_2.Add(self.senbetu_TxtCtl_27)
         self.senbetu_layout_1_2.Add(self.senbetu_spinbutton_5)
         self.senbetu_layout_1_2.Add(self.senbetu_s_text)
-        self.senbetu_layout_1_2.Add(self.senbetu_TxtCtl)
         self.senbetu_layout_1_2.Add(self.senbetu_spinbutton)
         self.senbetu_layout_1_2.Add(self.senbetu_s_text_27)
-        self.senbetu_layout_1_2.Add(self.senbetu_TxtCtl_28)
         self.senbetu_layout_1_2.Add(self.senbetu_spinbutton_6)
         self.senbetu_layout_1_2.Add(self.senbetu_s_text_29)
-        self.senbetu_layout_1_2.Add(self.senbetu_TxtCtl_30)
         self.senbetu_layout_1_2.Add(self.senbetu_spinbutton_7)
         self.senbetu_layout_1.Add(self.senbetu_layout_1_2)
         
@@ -1547,11 +1486,11 @@ class MyApp(wx.App):
         self.senbetu_layout_3.Add(self.senbetu_layout_3_2)
         self.senbetu_layout_1_2_3 = wx.BoxSizer(wx.HORIZONTAL)
         self.senbetu_layout_1_2_3.Add(
-            self.senbetu_layout_2, 0, flag=wx.EXPAND | wx.ALL,   border=10)
+            self.senbetu_layout_2, 0, flag=wx.EXPAND | wx.ALL,   border=30)
         self.senbetu_layout_1_2_3.Add(
-            self.senbetu_layout_1, 0, flag=wx.EXPAND | wx.ALL,   border=10)
+            self.senbetu_layout_1, 0, flag=wx.EXPAND | wx.ALL,   border=30)
         self.senbetu_layout_1_2_3.Add(
-            self.senbetu_layout_3, 1, flag=wx.EXPAND | wx.ALL,   border=10)
+            self.senbetu_layout_3, 1, flag=wx.EXPAND | wx.ALL,   border=30)
         self.panel_senbetu.SetSizer(self.senbetu_layout_1_2_3)
         self.Frm.Show()
         self.Btn1.Enable()
